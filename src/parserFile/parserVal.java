@@ -54,6 +54,7 @@ public class parserVal {
         else if (isValidDeclaration(line,stringRegex))
             return true;
         else
+
             return false;
     }
 
