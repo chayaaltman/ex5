@@ -16,12 +16,19 @@ import java.util.regex.Pattern;
 public class parserVal {
 
     private static HashMap<String, ArrayList<String>> valMap;
-    private final String valNameRegex= "(?:[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*)" ;
-    private String stringRegex = "(String) +("+valNameRegex+") *= *\"[^\"]*\" *;";
+    private static final String valNameRegex= "(?:[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*)" ;
+    private static final String intNumRegex= "[+-]?[1-9][0-9]*|0";
+    private static final String doubleNumRegex= "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
     //int- works
-    private String intRegex = "^(int) +("+valNameRegex+") *(= *([+-]?[1-9][0-9]*|0) *)?;$";
-    private String doubleRegex = "(double) +"+valNameRegex+" *= *[0-9]+(\\.[0-9]+)? *;";
-    private String booleanRegex = "(boolean) +"+valNameRegex+"* *= *(true|false) *;";
+    private static final String intRegex = "^(int) +("+valNameRegex+") *(= *("+intNumRegex+") *)?;$";
+    //double works
+    private static final  String doubleRegex = "^(double) +("+valNameRegex+") *(= *("+doubleNumRegex+"))? *;$";
+    private static final String booleanRegex = "^(boolean) +("+valNameRegex+") *(= *(true|false|"+intNumRegex+doubleNumRegex+"))? *;";
+    //string works
+    private static final String stringRegex ="^(String) +("+valNameRegex+") *(= *\"[^\\'\",]+\")? *;$";
+
+    private static final String charRegex = "^(char) +("+valNameRegex+") *(= *'[^\\'\",]')? *;$";
+
 
     private final String line;
 
@@ -29,11 +36,28 @@ public class parserVal {
         this.line = line;
         valMap= new HashMap<>();
         valMap.put("String", new ArrayList<>());
-        valMap.put("Int", new ArrayList<>());
-        valMap.put("Double", new ArrayList<>());
-        valMap.put("Boolean", new ArrayList<>());
+        valMap.put("int", new ArrayList<>());
+        valMap.put("double", new ArrayList<>());
+        valMap.put("boolean", new ArrayList<>());
+        valMap.put("char", new ArrayList<>());
     }
-    public static boolean isValidDeclaration(String line, String regex) {
+
+    public static boolean checkLine(String line) {
+        if (isValidDeclaration(line,intRegex))
+            return true;
+        else if (isValidDeclaration(line,doubleRegex))
+            return true;
+        else if (isValidDeclaration(line,booleanRegex))
+            return true;
+        else if (isValidDeclaration(line,charRegex))
+            return true;
+        else if (isValidDeclaration(line,stringRegex))
+            return true;
+        else
+            return false;
+    }
+
+    private static boolean isValidDeclaration(String line, String regex) {
         boolean isUsed ;
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(line);
@@ -47,9 +71,7 @@ public class parserVal {
                 addValToMap(matcher.group(1), matcher.group(2));
                 return true;
             }
-
         }
-
         return false;
     }
 
