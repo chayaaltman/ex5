@@ -13,33 +13,44 @@ import java.util.regex.Pattern;
 /**
  * Parser the variables in each scope: global vars and scope vars
  */
+
 public class Variable {
 
-    private static HashMap<String, ArrayList<String>> valMap;
+    private static HashMap<String, ArrayList<String>> globalValMap;
     private static final String valNameRegex= "?:[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*" ;
     private static final String intNumRegex= "[+-]?[1-9][0-9]*|0";
     private static final String doubleNumRegex= "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
-    //int- works
-    private static final String intRegex = "^(int) +("+valNameRegex+") *(= *("+intNumRegex+") *)?;$";
-    //double works
-    private static final  String doubleRegex = "^(double) +("+valNameRegex+") *(= *("+doubleNumRegex+"))? *;$";
-    private static final String booleanRegex = "^(boolean) +("+valNameRegex+") *(= *(true|false|"+intNumRegex+doubleNumRegex+"))? *;";
-    //string works
-    private static final String stringRegex ="^(String) +("+valNameRegex+") *(= *\"[^\\'\",]+\")? *;$";
+    private static final String stringRegex= "\"[^\\\\'\\\",]+\"";
+    private static final String charRegex= "'[^\\\\'\\\",]'";
+    private static final String booleanRegex= "true|false|"+intNumRegex+doubleNumRegex;
 
-    private static final String charRegex = "^(char) +("+valNameRegex+") *(= *'[^\\'\",]')? *;$";
+    private static final String intRegex = "^(int) +("+valNameRegex+") *(= *("+intNumRegex+"))?" +
+            " *(, *("+valNameRegex+") *(= *("+intNumRegex+"))? *)*;$";
 
+    private static final  String doubleRegex = "^(double) +("+valNameRegex+") *(= *("+doubleNumRegex+"))?" +
+            " *(, *("+valNameRegex+") *(= *("+doubleNumRegex+"))? *)*;$";
 
+    private static final String fullBooleanRegex = "^(boolean) +("+valNameRegex+") *(= *("+booleanRegex+"))?" +
+            " *(, *("+valNameRegex+") *(= *("+booleanRegex+"))? *)*;$";
+
+    private static final String fullStringRegex ="^(String) +("+valNameRegex+") *(= *"+stringRegex+")?" +
+            " *(, *("+valNameRegex+") *(= *"+stringRegex+")? *)*;$";
+
+    private static final String fullCharRegex = "^(char) +("+valNameRegex+") *(= *"+charRegex+")?" +
+            " *(, *("+valNameRegex+") *(= *"+charRegex+")? *)*;$";
+
+ String h = "^(int) +(?:[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*) *(= *([+-]?[1-9][0-9]*|0))? *(, *(?:[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*) *(= *([+-]?[1-9][0-9]*|0))? *)*;$";
     private final String line;
+
 
     public Variable(String line ) {
         this.line = line;
-        valMap= new HashMap<>();
-        valMap.put("String", new ArrayList<>());
-        valMap.put("int", new ArrayList<>());
-        valMap.put("double", new ArrayList<>());
-        valMap.put("boolean", new ArrayList<>());
-        valMap.put("char", new ArrayList<>());
+        globalValMap= new HashMap<>();
+        globalValMap.put("String", new ArrayList<>());
+        globalValMap.put("int", new ArrayList<>());
+        globalValMap.put("double", new ArrayList<>());
+        globalValMap.put("boolean", new ArrayList<>());
+        globalValMap.put("char", new ArrayList<>());
     }
 
     public static boolean checkLine(String line) {
@@ -47,14 +58,13 @@ public class Variable {
             return true;
         else if (isValidDeclaration(line,doubleRegex))
             return true;
-        else if (isValidDeclaration(line,booleanRegex))
+        else if (isValidDeclaration(line,fullBooleanRegex))
             return true;
-        else if (isValidDeclaration(line,charRegex))
+        else if (isValidDeclaration(line,fullCharRegex))
             return true;
-        else if (isValidDeclaration(line,stringRegex))
+        else if (isValidDeclaration(line,fullStringRegex))
             return true;
         else
-
             return false;
     }
 
@@ -77,7 +87,7 @@ public class Variable {
     }
 
     private static void addValToMap(String valType, String valName) {
-        valMap.get(valType).add(valName);
+        globalValMap.get(valType).add(valName);
     }
 
     // val in list returns true - val not in list returns false
@@ -91,9 +101,9 @@ public class Variable {
     }
     //checks if the val is in the  of other types  and
     private static boolean isValUsed( String valType, String valName) {
-        for (String type : valMap.keySet()) {
+        for (String type : globalValMap.keySet()) {
             if (!Objects.equals(valType, type)) {
-                if (isValInList(valMap.get(type), valName)){
+                if (isValInList(globalValMap.get(type), valName)){
                     return true;
                 }
             }
@@ -102,7 +112,7 @@ public class Variable {
     }
 
     public static HashMap<String, ArrayList<String>> getValMap() {
-        return valMap;
+        return globalValMap;
     }
 
     /// ///***** TODO: implement the following methods
