@@ -26,7 +26,7 @@ public class Variable {
     private static final String booleanRegex = "^(boolean) +("+valNameRegex+") *(= *(true|false|"+intNumRegex+doubleNumRegex+"))? *;";
     //string works
     private static final String stringRegex ="^(String) +("+valNameRegex+") *(= *\"[^\\'\",]+\")? *;$";
-    
+
     private static final String charRegex = "^(char) +("+valNameRegex+") *(= *'[^\\'\",]')? *;$";
 
 
