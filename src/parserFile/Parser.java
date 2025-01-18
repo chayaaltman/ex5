@@ -7,10 +7,10 @@ public class Parser {
     private final List<String> lines; // Stores lines read from the file
     FileReader fileReader = null;
     BufferedReader br = null;
-    private static List<Map<String, List<Map<String, String>>>> allMethods;
+
     public Parser() {
         this.lines = new ArrayList<>();
-        allMethods = new ArrayList<>();
+        //allMethods = new ArrayList<>();
 //        this.fileReader = new FileReader(filename);
 //        this.br = new BufferedReader(fileReader);
     }
@@ -76,14 +76,15 @@ public class Parser {
             IfWhile ifWhile = new IfWhile(lines);
             ifWhile.parserSubroutine();
         }
-        else if (line.startsWith("int") || line.startsWith("char") || line.startsWith("String") || line.startsWith("double") || line.startsWith("boolean")) {
+        else if (line.startsWith("int") || line.startsWith("char") || line.startsWith("String") ||
+                line.startsWith("double") || line.startsWith("boolean")) {
             Variable variable = new Variable(line);
             variable.checkLine(line);
         }
         else if (line.startsWith("void")) {
             List<String> methodLines = new ArrayList<>();
             methodLines.add(line);
-            ///  sent to method parser all of the method lines
+            ///  TODO sent to method parser all of the method lines
             for (String methodLine : lines) {
                 if (Objects.equals(methodLine, "}")) {
                     methodLines.add(methodLine);
@@ -93,19 +94,12 @@ public class Parser {
             }
             Method method = new Method(methodLines);
             method.methodDeclaration(line);
-            String name = method.getName();
-            Map<String, List<Map<String, String>>> methodMap = new HashMap<>();
-            methodMap.put(name, method.getParameters());
-
+            method.handleBody();
         }
         return true;
     }
 
     public List<String> getLines() {
         return lines;
-    }
-
-    public List<Map<String, List<Map<String, String>>>> getAllMethods() {
-        return allMethods;
     }
 }

@@ -7,6 +7,7 @@ import java.util.List;
 
 public class IfWhile {
     private final List<String> body;
+    private String condition;
 
     public IfWhile(List<String> body) {
         this.body = body;
@@ -18,16 +19,24 @@ public class IfWhile {
     }
 
     private void parserBody(){
-        for (int i = 1; i < body.size(); i++) {
-            String line = body.get(i);
-            // Process each line (print it in this example)
-
-            //check file
-            System.out.println(line);
+        for (String line : body) {
+            // Check if the line is a valid statement
+            if (line.startsWith("if") || line.startsWith("while")) {
+                IfWhile ifWhile = new IfWhile(body);
+                ifWhile.parserSubroutine();
+            }
+            else if (line.startsWith("int") || line.startsWith("char") || line.startsWith("String") || line.startsWith("double") || line.startsWith("boolean")) {
+                Variable variable = new Variable(line);
+                variable.checkLine(line);
+            }
+            else if (line.startsWith("return")) {
+                // handle return
+                handleReturn(line);
+            }
         }
     }
 
-    private String parserConditionLine(){
+    private boolean parserConditionLine(){
         List<String> conditionList = new ArrayList<>();
         String condition = null;
         // Regex to match and extract the condition
@@ -38,16 +47,16 @@ public class IfWhile {
         // Check if the line matches the pattern
         if (matcher.matches()) {
             // Extract the condition inside the parentheses
-            condition = matcher.group(1).trim();
+            this.condition = matcher.group(1).trim();
             boolean parserCond = parserCondition(condition);
             if (!parserCond) {
-                throw new IllegalArgumentException("invalid condition");
+                return false;
             }
         }
         else {
-            throw new IllegalArgumentException("Invalid line format: " + body.get(0));
+            return false;
         }
-        return condition;
+        return true;
     }
 
     private boolean parserCondition(String condition){

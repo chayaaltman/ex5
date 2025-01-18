@@ -9,6 +9,7 @@ public class Method {
     private List<Map<String, String>> parameters;
     private List<String> body;
     private List<Map<String, String>> localVariables;
+    private static List<Map<String, List<Map<String, String>>>> allMethods; // a static list that holds all of the methods and their parameters
 
     public Method(List<String> body) {
         this.parameters = new ArrayList<>();
@@ -23,7 +24,6 @@ public class Method {
 
         // Match the regex
         if (!line.matches(methodDeclarationRegex)) {
-            System.out.println("Invalid method declaration: " + line);
             return false;
         }
         String methodName = line.split("\\(")[0].trim().split("\\s+")[1];  // Extract method name
@@ -48,32 +48,33 @@ public class Method {
         }
         // check if the body end with "}"
         if (!body.get(body.size() - 1).equals("}")) {
-            System.out.println("Invalid method declaration: " + line);
             return false;
         }
-
-        System.out.println("Declared method: " + methodName);
-        System.out.println("Parameters: " + parameters);
+        allMethods.add(Map.of(methodName, parameters)); // add the new method to the method names list
         return true;
     }
 
-    private void handleBody(){
-        for(String line : body){
+    public boolean handleBody(){
+        boolean returnFlag = false;
+        for (int i = 0; i < body.size(); i++) {
+            String line = body.get(i);
             if (line.startsWith("int") || line.startsWith("char") || line.startsWith("String") || line.startsWith("double") || line.startsWith("boolean")) {
                 handleVariables(line);
-            }
-            if (line.startsWith("if") || line.startsWith("while")) {
+            } else if (line.startsWith("if") || line.startsWith("while")) {
                 handleIfWhile();
-            }
-            if (line.startsWith("return")) {
-                // handle return
+            } else if (line.startsWith("return")) {
+                if (i == body.size() - 1) {
+                    returnFlag = true;
+                }
                 handleReturn(line);
-            }
-            else{
-                // handle method call
+            } else {
                 handleMethodCall(line);
             }
         }
+        if (!returnFlag) {
+            return false;
+        }
+        return true;
     }
 
     // add local vars: use the variables class. call it after
@@ -111,17 +112,26 @@ public class Method {
         }
     }
     // TODO: Implement the following methods
-    private void handleReturn(String line){}
+    private boolean handleReturn(String line) {
+        String returnRegex = "^\\s*return\\s*;\\s*$";
+        if (!line.matches(returnRegex)) {
+            return false;
+        }
+        System.out.println("Return statement processed: " + line);
+        return true;
+    }
 
-    private void handleMethodCall(String line){
+    private boolean handleMethodCall(String line){
         Parser parser = new Parser();
         String methodCallRegex = "^\\s*[a-zA-Z][a-zA-Z0-9_]*\\s*\\([^)]*\\)\\s*;$";
         if (!line.matches(methodCallRegex)) {
             System.out.println("Invalid method call: " + line);
+            return false;
         }
         String methodName = line.substring(0, line.indexOf('(')).trim();
-        if (!parser.getAllMethods().contains(methodName)) {
+        if (!allMethods.contains(methodName)) {
             System.out.println("Error: Method not found - " + methodName);
+            return false;
         }
         // Extract the parameters (if any)
         String paramsPart = line.split("\\(")[1].split("\\)")[0].trim();  // Get everything between parentheses
@@ -133,8 +143,7 @@ public class Method {
 
 
         }
+
+        return true;
     }
-
-
-
 }
