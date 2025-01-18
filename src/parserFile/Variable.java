@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 /**
  * Parser the variables in each scope: global vars and scope vars
  */
-public class parserVal {
+public class Variable {
 
     private static HashMap<String, ArrayList<String>> valMap;
     private static final String valNameRegex= "(?:[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*)" ;
@@ -32,7 +32,7 @@ public class parserVal {
 
     private final String line;
 
-    public parserVal(String line ) {
+    public Variable(String line ) {
         this.line = line;
         valMap= new HashMap<>();
         valMap.put("String", new ArrayList<>());
@@ -99,6 +99,19 @@ public class parserVal {
             }
         }
         return false;
+    }
+
+    public static HashMap<String, ArrayList<String>> getValMap() {
+        return valMap;
+    }
+
+    /// ///***** TODO: implement the following methods
+    public String getName() {
+
+    }
+
+    public String getType() {
+
     }
 
 

@@ -5,25 +5,36 @@ import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * This class will manage the If statements: every scope that begins with If
- */
-public class parserIf
-{
-    private final String line;
+public class IfWhile {
+    private final List<String> body;
 
-    public parserIf(String line) {
-        this.line = line;
+    public IfWhile(List<String> body) {
+        this.body = body;
     }
 
-    private String parserConditionLine(String line){
+    public void parserSubroutine(){
+        parserConditionLine();
+        parserBody();
+    }
+
+    private void parserBody(){
+        for (int i = 1; i < body.size(); i++) {
+            String line = body.get(i);
+            // Process each line (print it in this example)
+
+            //check file
+            System.out.println(line);
+        }
+    }
+
+    private String parserConditionLine(){
         List<String> conditionList = new ArrayList<>();
         String condition = null;
         // Regex to match and extract the condition
         String regex = "^if\\s+\\(\\s*([a-zA-Z0-9_!><=+/*-]+)\\s*\\)\\s*\\{$\n";
         // Matches "if(condition) {"
         Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(line);
+        Matcher matcher = pattern.matcher(body.get(0));
         // Check if the line matches the pattern
         if (matcher.matches()) {
             // Extract the condition inside the parentheses
@@ -34,20 +45,11 @@ public class parserIf
             }
         }
         else {
-            throw new IllegalArgumentException("Invalid line format: " + line);
+            throw new IllegalArgumentException("Invalid line format: " + body.get(0));
         }
         return condition;
     }
 
-    /**
-     * Parser the condition inside the (). it must be a boolean value as true or false
-     * options:
-     * true/ false
-     * initialized boolean (double or int)
-     * double or int constant or value like 5,3..
-     * @param condition
-     * @return
-     */
     private boolean parserCondition(String condition){
         // Trim whitespace around the condition
         condition = condition.trim();
@@ -74,19 +76,6 @@ public class parserIf
         }
         return true;
     }
-
-    private boolean isValidValue(String value){
-        // check if the variable is inside the vars table
-        // if its not, return false
-        return true;
-    }
-
-    private void compileSubroutine(String subroutine){
-        /// call the parserVar and parserMethod classes functions to deal with it
-    }
-
-
-
 
 
 
