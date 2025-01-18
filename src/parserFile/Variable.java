@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 public class Variable {
 
     private static HashMap<String, ArrayList<String>> valMap;
-    private static final String valNameRegex= "(?:[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*)" ;
+    private static final String valNameRegex= "?:[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*" ;
     private static final String intNumRegex= "[+-]?[1-9][0-9]*|0";
     private static final String doubleNumRegex= "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
     //int- works
@@ -26,7 +26,7 @@ public class Variable {
     private static final String booleanRegex = "^(boolean) +("+valNameRegex+") *(= *(true|false|"+intNumRegex+doubleNumRegex+"))? *;";
     //string works
     private static final String stringRegex ="^(String) +("+valNameRegex+") *(= *\"[^\\'\",]+\")? *;$";
-
+    
     private static final String charRegex = "^(char) +("+valNameRegex+") *(= *'[^\\'\",]')? *;$";
 
 
