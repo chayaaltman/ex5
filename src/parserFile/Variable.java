@@ -17,15 +17,15 @@ public class Variable {
     private static final int VARS_GROUP_NUM=3;
 
 
-    private static HashMap<String, ArrayList<HashMap<String, String>>>globalValMap;
-    private HashMap<String, ArrayList<HashMap<String,HashMap<String,Boolean>>>> localValMap;
+    private static HashMap<type, ArrayList<HashMap<String,HashMap<varProperties,Boolean>>>>globalValMap;
+    private HashMap<type, ArrayList<HashMap<String,HashMap<varProperties,Boolean>>>> localValMap;
     private static final String valNameRegex= "?:[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*" ;
-    private static final String intNumRegex= "[+-]?[0-9]+";
-    private static final String doubleNumRegex= "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
-    private static final String stringRegex= "\"[^\\\\'\\\",]+\"";
-    private static final String charRegex= "'[^\\\\'\\\",]'";
-    private static final String booleanRegex= "true|false|"+intNumRegex+"|"+doubleNumRegex;
-    private static final String finalRegex= "(final)? +";
+    public static final String intNumRegex= "[+-]?[0-9]+";
+    public static final String doubleNumRegex= "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
+    public static final String stringRegex= "\"[^\\\\'\\\",]+\"";
+    public static final String charRegex= "'[^\\\\'\\\",]'";
+    public static final String booleanRegex= "true|false|"+intNumRegex+"|"+doubleNumRegex;
+    public static final String finalRegex= "(final)? +";
 
 
     //private static final String intRegex = "^(int) +("+valNameRegex+") *(= *("+intNumRegex+"))?" +
@@ -50,37 +50,55 @@ public class Variable {
          //   " *(, *("+valNameRegex+") *(= *"+charRegex+")? *)*;$";
     private static final String allValueRegex= booleanRegex+"|"+stringRegex+"|"+charRegex;
     private static final String VARIABLE_REGEX_HASAMA= valNameRegex+"(?: *= *"+allValueRegex+")?(?:, *("+valNameRegex+")(?: *= *"+allValueRegex+")?)*) *;$";
-
+    private static final String VARAIBLE_WITH_VARIABLE
     private final String line;
 
 
     public Variable(String line ) {
         this.line = line;
         globalValMap= new HashMap<>();
-        globalValMap.put("String", new ArrayList<>());
-        globalValMap.put("int", new ArrayList<>());
-        globalValMap.put("double", new ArrayList<>());
-        globalValMap.put("boolean", new ArrayList<>());
-        globalValMap.put("char", new ArrayList<>());
+        localValMap=new HashMap<>();
+        initGlobalValMap();
+        initLocalValMap();
     }
 
-    public  void checkLine(String line, String scope) throws Exception {
-        isValidDeclaration(line,fullIntRegex, scope);
-        isValidDeclaration(line,fullDoubleRegex,scope);
-        isValidDeclaration(line,fullBooleanRegex,scope);
-        isValidDeclaration(line,fullCharRegex,scope);
-        isValidDeclaration(line,fullStringRegex,scope);
-        isValidDeclaration(line,VARIABLE_REGEX_HASAMA,scope);
+    private static void initGlobalValMap(){
+        globalValMap.put(type.STRING, new ArrayList<>());
+        globalValMap.put(type.INT, new ArrayList<>());
+        globalValMap.put(type.DOUBLE, new ArrayList<>());
+        globalValMap.put(type.BOOLEAN, new ArrayList<>());
+        globalValMap.put(type.CHAR, new ArrayList<>());
     }
 
-    private  void isValidDeclaration(String line, String regex, String scope) throws Exception {
+    private void initLocalValMap(){
+        localValMap.put(type.STRING, new ArrayList<>());
+        localValMap.put(type.INT, new ArrayList<>());
+        localValMap.put(type.DOUBLE, new ArrayList<>());
+        localValMap.put(type.BOOLEAN, new ArrayList<>());
+        localValMap.put(type.CHAR, new ArrayList<>());
+    }
+
+    public  void checkLine(String line, varProperties scope) throws Exception {
+        try {
+            isValidDeclaration(line, fullIntRegex, scope);
+            isValidDeclaration(line, fullDoubleRegex, scope);
+            isValidDeclaration(line, fullBooleanRegex, scope);
+            isValidDeclaration(line, fullCharRegex, scope);
+            isValidDeclaration(line, fullStringRegex, scope);
+            isValidDeclaration(line, VARIABLE_REGEX_HASAMA, scope);
+        } catch (Exception e) {
+            throw new Exception(e);
+        }
+    }
+
+    private  void isValidDeclaration(String line, String regex, varProperties scope) throws Exception {
         boolean isUsed ;
 
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(line);
-
+        //checks if the line is valid sintax
         if (matcher.matches()){
-            //checks if val is used as a dif type
+            //creates a map of the variables in this line
             Map<String, Boolean> varMaP= createVarMap(matcher.group(VARS_GROUP_NUM));
 
             //checks if num is final
@@ -91,16 +109,17 @@ public class Variable {
                     // if statment is final checks if has a value for all the vars
                         throw new Exception("is a final statement and doesnt have a value for the variable");
                     }
+                //checks in local scope if val is assigned
                 isUsed = isValUsed(matcher.group(TYPE_GROUP_NUM), var);
                 if (isUsed){
                     throw new Exception("this var name is used as a different type ");
                 }
                 else{
-                    if (Objects.equals(scope, "global")){
+                    if (scope==varProperties.GLOBAL){
                         addValToMapGlobal(matcher.group(TYPE_GROUP_NUM),var);
 
                     }
-                    else if (Objects.equals(scope, "local")){
+                    else if (scope==varProperties.LOCAL){
                         addValToMapLocal(matcher.group(TYPE_GROUP_NUM),var);
                     }
                 }

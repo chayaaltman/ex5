@@ -1,18 +1,12 @@
 package parserFile;
-
 import java.io.*;
 import java.util.*;
 
 public class Parser {
-    private final List<String> lines; // Stores lines read from the file
-    FileReader fileReader = null;
-    BufferedReader br = null;
-
+    private static List<String> lines = new ArrayList<>(); // Stores lines read from the file
+    private List<List<String>> ifWhileScopes = new ArrayList<>();
+    private List<List<String>> methodScopes = new ArrayList<>();
     public Parser() {
-        this.lines = new ArrayList<>();
-        //allMethods = new ArrayList<>();
-//        this.fileReader = new FileReader(filename);
-//        this.br = new BufferedReader(fileReader);
     }
 
     public void readFile(String filename) throws IOException {
@@ -21,13 +15,15 @@ public class Parser {
         try {
             fileReader = new FileReader(filename); // Open the file
             br = new BufferedReader(fileReader);
-
             String line;
             while ((line = br.readLine()) != null) {
                 // Process each line (print it in this example)
                 lines.add(line.trim()); // Trim to remove extra spaces
                 System.out.println(line);
             }
+
+            // close the file
+            fileReader.close();
         } catch (IOException e) {
             // Handle file-related errors
             System.out.println("An error occurred while reading the file: " + e.getMessage());
@@ -46,60 +42,110 @@ public class Parser {
         }
     }
 
-    public boolean validateFile() {
-        for (String line : lines) {
-            if (!validateLine(line)) {
-                return false;
+
+    public void parseFile() throws Exception {
+        boolean isBlockComment = false;
+        for (int i=0; i<lines.size(); i++) {
+            String line = lines.get(i);
+            ///  handle comments
+            System.out.println("Parsing line: " + line);
+            if (line.isEmpty()){
+                continue;
+            }
+            if (line.startsWith("//")){
+                continue;
+            }
+            if (line.startsWith("/*")){
+                isBlockComment = true;
+            }
+            while(isBlockComment){
+                if (line.endsWith("*/")){
+                    isBlockComment = false;
+                }
+                break;
+            }
+            if(isBlockComment){
+                continue;
+            }
+            /// // handle comments
+
+            // Example: Check if the line ends with ';', '{', or '}'
+            if (!line.endsWith(";") && !line.endsWith("{") && !line.endsWith("}")) {
+                throw new Exception("Invalid line syntax: " + line);
+            }
+            // Check if the line is a variable declaration
+            if (type.startsWithType(line) || line.startsWith("final")){
+                Variable.checkLine(line, varProperties.GLOBAL);
+            }
+            // starts with if or while
+            else if (line.startsWith("if") || line.startsWith("while")){
+                List<String> ifWhileScope = getIfWhileScope(i);
+                IfWhile ifWhile = new IfWhile(ifWhileScope);
+                ifWhile.parserSubroutine();
+
+                // add scope to the list of scopes
+                ifWhileScopes.add(ifWhileScope);
+            }
+            // a method call
+            else if (line.startsWith("void")){
+                List<String> methodScope = getMethodScope(i);
+                Method method = new Method(methodScope);
+                method.handleMethod();
+
+                // add scope to the list of scopes
+                methodScopes.add(methodScope);
+            }
+            else{
+                throw new Exception("Invalid line syntax: " + line);
             }
         }
-        return true;
     }
 
-    private boolean validateLine(String line) {
-        // Add regex or other validation logic here
-        // For now, just ignoring empty/comment lines as an example
-        if (line.isEmpty()) {
-            return true;
-        }
-        // handle comments:
-        if (line.startsWith("//")){
-            return true;
-
-        }
-
-        // Example: Check if the line ends with ';', '{', or '}'
-        if (!line.endsWith(";") && !line.endsWith("{") && !line.endsWith("}")) {
-            return false;
-        }
-
-        if (line.startsWith("if") || line.startsWith("while")) {
-            IfWhile ifWhile = new IfWhile(lines);
-            ifWhile.parserSubroutine();
-        }
-        else if (line.startsWith("int") || line.startsWith("char") || line.startsWith("String") ||
-                line.startsWith("double") || line.startsWith("boolean")) {
-            Variable variable = new Variable(line);
-            variable.checkLine(line);
-        }
-        else if (line.startsWith("void")) {
-            List<String> methodLines = new ArrayList<>();
-            methodLines.add(line);
-            ///  TODO sent to method parser all of the method lines
-            for (String methodLine : lines) {
-                if (Objects.equals(methodLine, "}")) {
-                    methodLines.add(methodLine);
+    public List<String> getMethodScope(int index) {
+        List<String> methodScope = new ArrayList<>();
+        int braceCount = 0;
+        boolean insideMethod = false;
+        for (int i=index; i<lines.size(); i++) {
+            if (lines.get(i).contains("{")) {
+                braceCount++;
+                insideMethod = true;
+            }
+            if (insideMethod) {
+                methodScope.add(lines.get(i));
+            }
+            if (lines.get(i).contains("}")) {
+                braceCount--;
+                if (braceCount == 0) {
+                    insideMethod = false;
                     break;
                 }
-                methodLines.add(methodLine);
             }
-            Method method = new Method(methodLines);
-            method.methodDeclaration(line);
-            method.handleBody();
         }
-        return true;
+        return methodScope;
     }
 
-    public List<String> getLines() {
-        return lines;
+    public static List<String> getIfWhileScope(int index) {
+        List<String> ifWhileScope = new ArrayList<>();
+        int braceCount = 0;
+        boolean insideIfWhile = false;
+        for (int i=index; i<lines.size(); i++) {
+            if (lines.get(i).contains("{")) {
+                braceCount++;
+                insideIfWhile = true;
+            }
+            if (insideIfWhile) {
+                ifWhileScope.add(lines.get(i));
+            }
+            if (lines.get(i).contains("}")) {
+                braceCount--;
+                if (braceCount == 0) {
+                    insideIfWhile = false;
+                    break;
+                }
+            }
+        }
+        return ifWhileScope;
     }
+
+
 }
