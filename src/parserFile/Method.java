@@ -197,72 +197,17 @@ public class Method {
         ifWhile.parserIfWhileScope();
     }
 
-    public static void handleReturn(String line) throws Exception {
+    public  void handleReturn(String line) throws Exception {
         if (!line.matches(returnRegex)) {
             throw new Exception("Invalid return statement: " + line);
         }
     }
 
-//    private void handleMethodCall(String line) throws Exception {
-//        String methodCallRegex = "^\\s*[a-zA-Z][a-zA-Z0-9_]*\\s*\\([^)]*\\)\\s*;$";
-//        if (!line.matches(methodCallRegex)) {
-//            throw new Exception("Invalid method call: " + line);
-//        }
-//        String methodName = line.substring(0, line.indexOf('(')).trim();
-//        if (!allMethods.contains(methodName)) {
-//            throw new Exception("Method " + methodName + " is not defined");
-//        }
-//        List<Map<String, String>> originalParams = getMethodParameters(methodName);
-//        // Extract the parameters (if any)
-//        String paramsPart = line.split("\\(")[1].split("\\)")[0].trim();  // Get everything between parentheses
-//        if (!paramsPart.isEmpty()) {
-//            String[] params = paramsPart.split(",");
-//            // not have the same number of parameters:
-//            if (originalParams.size() != params.length) {
-//                throw new Exception("Invalid number of parameters for method " + methodName);
-//            }
-//            // the loop goes on the parameters and checks if they are the same type
-//            for (int i=0; i<params.length; i++){
-//                String type = originalParams.get(i).get("type");
-//                if (Objects.equals(type, "double")){
-//                    if (!params[i].matches(regexInt) && !params[i].matches(regexDouble)){
-//                        throw new Exception("Invalid parameter type for method " + methodName);
-//                    }
-//                }
-//                else if (Objects.equals(type, "boolean")){
-//                    if (!params[i].matches(regexBoolean) && !params[i].matches(regexInt) && !params[i].matches(regexDouble)){
-//                        throw new Exception("Invalid parameter type for method " + methodName);
-//                    }
-//                }
-//                else if (Objects.equals(type, "int")){
-//                    if (!params[i].matches(regexInt)){
-//                        throw new Exception("Invalid parameter type for method " + methodName);
-//                    }
-//                }
-//                else if (Objects.equals(type, "String")){
-//                    if (!params[i].matches(regexString)){
-//                        throw new Exception("Invalid parameter type for method " + methodName);
-//                    }
-//                }
-//                else if (Objects.equals(type, "char")){
-//                    if (!params[i].matches(regexChar)){
-//                        throw new Exception("Invalid parameter type for method " + methodName);
-//                    }
-//                }
-//                else if (Objects.equals(type, "final")){
-//                    if (!params[i].matches(finalRegex)){
-//                        throw new Exception("Invalid parameter type for method " + methodName);
-//                    }
-//                }
-//            }
-//        }
-//    }
-
     ///  ************************** HANDLE METHOD CALL **************************
     public void handleMethodCall(String line) throws Exception {
         // check if the method is defined
         String methodName = extractMethodName(line);
-        if (!allMethods.contains(methodName)) {
+        if (!isMethodExists(methodName)) {
             throw new Exception("Method " + methodName + " is not defined");
         }
         // the original parameters in the declaration of the method
@@ -310,11 +255,60 @@ public class Method {
         for (int i = 0; i < params.length; i++) {
             String type = originalParams.get(i).get("type");
             String param = params[i];
-            if (!isValidParameter(type, param)) {
+            boolean flag1= isValidParameter(type, param);
+            // if is a variable make sure it is assigned
+            boolean flag2= variable.isValidVariableinCondition(param, varProperties.LOCAL);
+            if (!flag1 && !flag2) {
                 throw new Exception("Invalid parameter type for method " + methodName);
             }
         }
     }
+    private  void validateParameterTypes(String methodName,
+                                               List<Map<String, String>> originalParams,
+                                               String[] params) throws Exception {
+        validateParameterTypesRecursive(methodName, originalParams, params, 0);
+    }
+
+    private  void validateParameterTypesRecursive(String methodName,
+                                                        List<Map<String, String>> originalParams,
+                                                        String[] params,
+                                                        int index) throws Exception {
+        if (index >= params.length ) {
+            // Base case: all parameters have been checked
+            return;
+        }
+        String type = originalParams.get(index).get("type");
+        String param = params[index];
+
+        // Check if the parameter matches the expected type
+        boolean isValid = isValidParameter(type, param);
+
+        if (!isValid) {
+            // If the parameter is a variable, check if it is defined in any scope
+            if (!isVariableDefinedInAnyScope(param)) {
+                throw new Exception("Invalid parameter type for method " + methodName);
+            }
+        }
+
+        // Recursive call for the next parameter
+        validateParameterTypesRecursive(methodName, originalParams, params, index + 1);
+    }
+
+    private boolean isVariableDefinedInAnyScope(String param) {
+        // Check the local scope
+        if (variable.isValidVariableinCondition(param, varProperties.LOCAL)) {
+            return true;
+        }
+        // Check the global scope (or other scopes if applicable)
+        if (variable.isValidVariableinCondition(param, varProperties.GLOBAL)) {
+            return true;
+        }
+        // Add additional scope checks here if necessary
+        return false;
+    }
+
+
+
 
     private  boolean isValidParameter(String type, String param) {
         // if the type is final, its still legal to call the method with a none final parameter

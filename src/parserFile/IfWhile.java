@@ -1,5 +1,6 @@
 package parserFile;
 
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
@@ -28,8 +29,15 @@ public class IfWhile {
 
     public IfWhile(List<String> body, Variable variable, List<Variable> variableScopeList) {
         this.body = body;
-        //this.method = method;
-        //this.condition = extractCondition(body.get(0));
+        this.variable = variable;
+        if (variableScopeList != null) {
+            for (Variable v : variableScopeList) {
+                if (v != null) {
+                    this.variableScopeList.add(v);
+                }
+            }
+        }
+        this.variableScopeList.add(variable);
     }
 
 
@@ -196,6 +204,5 @@ public class IfWhile {
         return value.matches(Variable.intNumRegex) || value.matches(Variable.doubleNumRegex) ||
                 value.matches(Variable.booleanRegex);
     }
-
 
 }

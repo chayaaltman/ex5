@@ -95,6 +95,15 @@ public class Parser {
                 throw new Exception("Invalid line syntax: " + line);
             }
         }
+        for (String methodName : methodScopes.keySet()){
+            Method method = new Method(methodScopes.get(methodName));
+            try {
+                method.handleMethod();
+            }
+            catch (Exception e){
+                throw new Exception(e.getMessage());
+            }
+        }
     }
 
 

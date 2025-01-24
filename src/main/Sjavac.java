@@ -10,7 +10,7 @@ public class Sjavac {
     private static final int IO_ERROR =2;
     private static final String FILE_NOT_FOUND_ERROR_MSG="Invalid file name";
 
-    private static void openFile(String filename) throws IOException, FileNotFoundException {
+    private static void openFile(String filename) throws Exception{
             File file = new File(filename);
             Parser parser = new Parser();
             ///  check if the file is a .sjava file
@@ -66,19 +66,16 @@ public class Sjavac {
 //        }
 //    }
 
-    private static int run (String fileName){
+    private static void run (String fileName) throws Exception {
         try {
             openFile(fileName);
-            return 0;
         }
         catch (FileNotFoundException e) {
             // Handle any unexpected errors
-            System.out.println(ERROR+" "+ e.getMessage());
-            return ERROR;
+            System.out.println(IO_ERROR +" "+ e.getMessage());
         }
         catch (IOException e) {
-            System.out.println(ERROR+" "+ e.getMessage());
-            return ERROR;
+            System.out.println(IO_ERROR +" "+ e.getMessage());
         }
         catch (Exception e){
             throw new Exception(e.getMessage());
@@ -105,8 +102,7 @@ public class Sjavac {
             }
         }
         catch (ArgumentAmountException e){
-            System.out.println(ERROR+":" +e.getMessage());
-            System.exit(ERROR);
+            System.out.println(IO_ERROR +": " +e.getMessage());
         }
     }
 }
