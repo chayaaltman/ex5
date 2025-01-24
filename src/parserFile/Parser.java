@@ -1,105 +1,102 @@
 package parserFile;
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static parserFile.Variable.VARIABLE_BODY_REGEX;
 
 public class Parser {
+    public static final String COMMENT_REGEX = "^//.*$";
+    public static final String ILLEGAL_COMMENT_REGEX =  "^(/\\*.*)|(.*\\*/)$";
+    public static final String LEGAL_END_LINE_REGEX = "^(.*[;{]|})$";
+    public static final String VAR_DEC_REGEX ="^(final +)?(int|String|double|char|boolean)" ;
+    public static final String IF_WHILE_REGEX = "^(if|while)";
+    public static final String METHOD_REGEX = "^void";
+    public static final String RETURN_REGEX = "^return";
+
     private static List<String> lines = new ArrayList<>(); // Stores lines read from the file
-    private List<List<String>> ifWhileScopes = new ArrayList<>();
-    private List<List<String>> methodScopes = new ArrayList<>();
+    private Map<String, List<String>> methodScopes = new HashMap();
     public Parser() {
     }
 
     public void readFile(String filename) throws IOException {
-        FileReader fileReader = null;
-        BufferedReader br = null;
-        try {
-            fileReader = new FileReader(filename); // Open the file
-            br = new BufferedReader(fileReader);
+        try (FileReader fileReader = new FileReader(filename); // Open the file
+             BufferedReader br = new BufferedReader(fileReader)) {
             String line;
             while ((line = br.readLine()) != null) {
                 // Process each line (print it in this example)
-                lines.add(line.trim()); // Trim to remove extra spaces
+                lines.add(line);
                 System.out.println(line);
             }
-
-            // close the file
-            fileReader.close();
         } catch (IOException e) {
             // Handle file-related errors
-            System.out.println("An error occurred while reading the file: " + e.getMessage());
-        } finally {
-            // Ensure resources are closed
-            try {
-                if (br != null) {
-                    br.close();
-                }
-                if (fileReader != null) {
-                    fileReader.close();
-                }
-            } catch (IOException e) {
-                System.out.println("An error occurred while closing the file: " + e.getMessage());
-            }
+            throw new IOException("An error occurred while reading the file: " + e.getMessage());
         }
     }
-
 
     public void parseFile() throws Exception {
         boolean isBlockComment = false;
-        for (int i=0; i<lines.size(); i++) {
+        for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
             ///  handle comments
             System.out.println("Parsing line: " + line);
-            if (line.isEmpty()){
+            Pattern pattern = Pattern.compile(VAR_DEC_REGEX);
+            Matcher matcher = pattern.matcher(line);
+            Pattern pattern2 = Pattern.compile(VARIABLE_BODY_REGEX);
+            Matcher matcher2 = pattern2.matcher(line);
+            if (line.isEmpty()) {
                 continue;
-            }
-            if (line.startsWith("//")){
+            } else if (line.matches(COMMENT_REGEX)) {
                 continue;
+            } else if (line.matches(ILLEGAL_COMMENT_REGEX)) {
+                throw new Exception("Wrong comment type");
             }
-            if (line.startsWith("/*")){
-                isBlockComment = true;
-            }
-            while(isBlockComment){
-                if (line.endsWith("*/")){
-                    isBlockComment = false;
-                }
-                break;
-            }
-            if(isBlockComment){
-                continue;
-            }
-            /// // handle comments
-
             // Example: Check if the line ends with ';', '{', or '}'
-            if (!line.endsWith(";") && !line.endsWith("{") && !line.endsWith("}")) {
-                throw new Exception("Invalid line syntax: " + line);
+
+            else if (!line.matches(LEGAL_END_LINE_REGEX)) {
+                throw new Exception("invalid end of line");
             }
+
             // Check if the line is a variable declaration
-            if (type.startsWithType(line) || line.startsWith("final")){
-                Variable.checkLine(line, varProperties.GLOBAL);
+            else if (matcher.find() || matcher2.find()) {
+                // add a checkLine function
+                Variable variable = new Variable();
+                try {
+                    variable.checkLine(line, varProperties.GLOBAL);
+                } catch (Exception e) {
+                    throw new Exception(e.getMessage());
+                }
             }
             // starts with if or while
-            else if (line.startsWith("if") || line.startsWith("while")){
-                List<String> ifWhileScope = getIfWhileScope(i);
-                IfWhile ifWhile = new IfWhile(ifWhileScope);
-                ifWhile.parserSubroutine();
-
-                // add scope to the list of scopes
-                ifWhileScopes.add(ifWhileScope);
+            else if (line.matches(IF_WHILE_REGEX)) {
+                throw new Exception("If/While statements are not allowed in the global scope");
             }
             // a method call
-            else if (line.startsWith("void")){
+            else if (line.matches(METHOD_REGEX)) {
                 List<String> methodScope = getMethodScope(i);
                 Method method = new Method(methodScope);
-                method.handleMethod();
-
+                try {
+                    method.methodDeclaration(line);
+                } catch (Exception e) {
+                    throw new Exception(e.getMessage());
+                }
+                //method.methodDeclaration(line);
                 // add scope to the list of scopes
-                methodScopes.add(methodScope);
+                methodScopes.put(method.getMethodName(), methodScope);
+                i = methodScope.size();
             }
-            else{
+            // for example: calling in the global scope for a method is illegal! throw an error
+            else if (line.matches(RETURN_REGEX)) {
+                throw new Exception("Cant return in the global scope");
+            }
+            else {
+                // if there is a method call, it should be handled in the method class, so throw exception
                 throw new Exception("Invalid line syntax: " + line);
             }
         }
     }
+
 
     public List<String> getMethodScope(int index) {
         List<String> methodScope = new ArrayList<>();

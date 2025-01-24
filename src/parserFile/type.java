@@ -16,13 +16,4 @@ public enum type {
      public String getType() {
           return type;
      }
-
-     public static boolean startsWithType(String line) {
-          for (type variableType : values()) {
-               if (line.startsWith(variableType.getType())) {
-                    return true;
-               }
-          }
-          return false;
-     }
 }

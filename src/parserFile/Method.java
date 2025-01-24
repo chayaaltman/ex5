@@ -1,52 +1,75 @@
 package parserFile;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Method {
 
-    private final String regexInt = Variable.intNumRegex;
-    private final String regexDouble = Variable.doubleNumRegex;
-    private final String regexBoolean = Variable.booleanRegex;
-    private final String regexString = Variable.stringRegex;
-    private final String regexChar = Variable.charRegex;
-    private static final String methodDeclarationRegex ="^\\s*void\\s+([a-zA-Z][a-zA-Z0-9_]*)\\s*\\(\\s*" +
-            "((int|char|double|boolean|String)\\s+[a-zA-Z_][a-zA-Z0-9_]*(\\s*,\\s*(int|char|double|boolean|String)" +
-            "\\s+[a-zA-Z_][a-zA-Z0-9_]*)*)?\\s*\\)\\s*\\{\\s*$";
+//    /**
+//     * Regexes for the different types of variables
+//     */
+//    private final String regexInt = Variable.intNumRegex;
+//    private final String regexDouble = Variable.doubleNumRegex;
+//    private final String regexBoolean = Variable.booleanRegex;
+//    private final String regexString = Variable.stringRegex;
+//    private final String regexChar = Variable.charRegex;
+    /**
+    * The regex for the method declaration "void methodName(int a, double b, String c...) {
+     **/
+    private static final String METHOD_NAME_REGEX="?:[a-zA-Z][a-zA-Z]*|_[a-zA-Z0-9][a-zA-Z0-9_]*";
+    private static final String methodDeclarationRegex ="^ *void +("+METHOD_NAME_REGEX+") *\\(( *(int|char|double|" +
+            "boolean|String) +"+Variable.valNameRegex+" *(, *(int|char|double|boolean|String) +"+Variable.valNameRegex+")*)?" +
+            " *\\) *\\{ *$";
+
+    /**
+     * The regex for the return statement "return;"
+     */
+
     private static final String returnRegex = "^\\s*return\\s*;\\s*$";
-    private static final String methodCallRegex = "^\\s*[a-zA-Z][a-zA-Z0-9_]*\\s*\\([^)]*\\)\\s*;$";
-
-
+    /**
+     * The regex for the method call "methodName(a, b, c...);"
+     */
+    public static final String METHOD_CALL_REGEX = "^ *("+METHOD_NAME_REGEX +
+            ") *\\( *((?:" + Variable.allValueRegex + "| ?" + Variable.valNameRegex + ")" +
+            "( *, *(?:" + Variable.allValueRegex + "| ?" + Variable.valNameRegex + "))*)? *\\) *;$";
 
     private String name;
+    private Variable variable;
     private List<Map<String, String>> parameters;
     private List<String> body;
-    private List<Map<String, String>> localVariables;
     private static List<Map<String, List<Map<String, String>>>> allMethods = new ArrayList<>(); // a static list that holds all of the methods and their parameters
 
     public Method(List<String> body) {
         this.parameters = new ArrayList<>();
-        this.localVariables = new ArrayList<>();
         this.body = body;
+        this.variable = new Variable();
     }
 
     public void handleMethod() throws Exception {
         try {
-            methodDeclaration(body.get(0));
+            //methodDeclaration(body.get(0));
             handleBody();
         } catch (Exception e) {
             throw new Exception("Error in method: " + e.getMessage());
         }
     }
 
-    private void methodDeclaration(String line) throws Exception {
+    public void methodDeclaration(String line) throws Exception {
         // Match the regex
         if (!line.matches(methodDeclarationRegex)) {
             throw new Exception("Invalid method declaration: " + line);
         }
-        String methodName = line.split("\\(")[0].trim().split("\\s+")[1];  // Extract method name
-        this.name = methodName;
+        //String methodName = line.split("\\(")[0].trim().split("\\s+")[1];  // Extract method name
+        Pattern pattern = Pattern.compile(methodDeclarationRegex);
+        Matcher matcher = pattern.matcher(line);
+        /// / *********CHECK GROUPS*********
+        String methodName = matcher.group(1);
+        if (isMethodExists(methodName)){
+            throw new Exception(methodName+" already is used as a different method");
+        }
         // Extract the parameters (if any)
-
-        String paramsPart = line.split("\\(")[1].split("\\)")[0].trim();  // Get everything between parentheses
+        String paramsPart = matcher.group(2);
+        //String  paramsPart = line.split("\\(")[1].split("\\)")[0].trim();  // Get everything between parentheses
         if (!paramsPart.isEmpty()) {
             String[] params = paramsPart.split(",");
             for (String param : params) {
@@ -57,10 +80,13 @@ public class Method {
                 Map<String, String> paramMap = new HashMap<>();
                 paramMap.put("type", paramType);
                 paramMap.put("name", paramName);
-
                 // Add the parameter map to the list for this method
-                this.parameters.add(paramMap);
                 Map<String, List<Map<String, String>>> methodMap = new HashMap<>();
+                // check if the method name is already in the list of methods names
+                // add the parameters to the list of parameters
+                this.parameters.add(paramMap);
+                // add the method name and the parameters to the method map
+                this.name = methodName;
                 methodMap.put(this.name, this.parameters);
                 allMethods.add(methodMap);
             }
@@ -68,21 +94,40 @@ public class Method {
         allMethods.add(Map.of(methodName, parameters)); // add the new method to the method names list
     }
 
+    public String getMethodName(){
+        return this.name;
+    }
+
+    private  boolean isMethodExists(String methodName) {
+        for (Map<String, List<Map<String, String>>> map : allMethods) {
+            if (map.containsKey(methodName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * Handles the body of the method
+     * @throws Exception
+     */
     private void handleBody() throws Exception {
-        boolean returnFlag = false;
+        boolean returnFlag = false; // Check if the method ends with a return statement
+
         for (int i = 0; i < body.size(); i++) {
             String line = body.get(i);
-            if (type.startsWithType(line)){
+
+            if (isVariableDeclaration(line)) {
                 handleVariables(line);
-            } else if (line.startsWith("if") || line.startsWith("while")) {
-                handleIfWhile();
-            } else if (line.startsWith("return")) {
-                if (i == body.size() - 1) {
-                    returnFlag = true;
-                }
-                handleReturn(line);
+            } else if (line.matches(Parser.IF_WHILE_REGEX)) {
+                handleIfWhileStatement(i);
+            } else if (isReturnStatement(line, i)) {
+                returnFlag = true;
+            } else if (!line.matches(Parser.METHOD_REGEX)) {
+                throw new Exception("Method cannot contain another method");
+            } else if (line.matches(METHOD_CALL_REGEX)) {
+                throwFromMethodCall(line);
             } else {
-                handleMethodCall(line);
+                throw new Exception("Invalid line syntax: " + line);
             }
         }
         if (!returnFlag) {
@@ -90,7 +135,32 @@ public class Method {
         }
     }
 
-    private List<Map<String, String>> getMethodParameters(String methodName) throws Exception {
+    public  boolean isVariableDeclaration(String line) {
+        return line.matches(Parser.VAR_DEC_REGEX) || line.matches(Variable.VARIABLE_BODY_REGEX);
+    }
+
+    public void handleIfWhileStatement(int i) throws Exception {
+        try {
+            handleIfWhile(i);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    public boolean isReturnStatement(String line, int index) {
+        return line.matches(returnRegex) && index == body.size() - 2;
+    }
+
+
+    public  void throwFromMethodCall(String line) throws Exception {
+        try {
+            handleMethodCall(line);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    public List<Map<String, String>> getMethodParameters(String methodName) throws Exception {
         for (Map<String, List<Map<String, String>>> methodMap : allMethods) {
             if (methodMap.containsKey(methodName)) {
                 return methodMap.get(methodName);
@@ -100,27 +170,31 @@ public class Method {
     }
 
     // add local vars: use the variables class. call it after
-    private void handleVariables(String line) throws Exception {
-        Variable variable = new Variable(line);
-        try{
-            variable.checkLine(line, varProperties.LOCAL);
-            Map<String, String> localVar = new HashMap<>();
-            localVar.put("type", variable.getType());
-            localVar.put("name", variable.getName());
-            localVariables.add(localVar);
-        }
-        catch (Exception e) {
-            throw new Exception("Error in variable declaration: " + e.getMessage());
+    public void handleVariables(String line) throws Exception {
+        try {
+            // Try checking the line as a local variable
+            this.variable.checkLine(line, varProperties.LOCAL);
+            // If it succeeds, exit the method and avoid checking the global context
+            return;
+        } catch (Exception localException) {
+            // If the local check fails, attempt to check as a global variable
+            try {
+                this.variable.checkLine(line, varProperties.GLOBAL);
+            } catch (Exception globalException) {
+                // If both local and global checks fail, throw an exception
+                throw new Exception("Error in variable declaration: " + globalException.getMessage());
+            }
         }
     }
 
-    private void handleIfWhile(){
-        for (String line : body) {
-            if (line.startsWith("if") || line.startsWith("while")) {
-                IfWhile ifWhile = new IfWhile(body);
-                ifWhile.parserSubroutine();
-            }
-        }
+    public void handleIfWhile(int index) throws Exception {
+        // Get the body of the if/while statement
+        List<String> body = Parser.getIfWhileScope(index);
+        // Create a new IfWhile object and parse the body
+        Variable variableNew= new Variable();
+        IfWhile ifWhile = new IfWhile(body, variableNew, null);
+        // Recursive call for condition and body
+        ifWhile.parserIfWhileScope();
     }
 
     public static void handleReturn(String line) throws Exception {
@@ -186,10 +260,6 @@ public class Method {
 
     ///  ************************** HANDLE METHOD CALL **************************
     public void handleMethodCall(String line) throws Exception {
-        // check if the method calling is valid
-        if (!isValidMethodCall(line)) {
-            throw new Exception("Invalid method call: " + line);
-        }
         // check if the method is defined
         String methodName = extractMethodName(line);
         if (!allMethods.contains(methodName)) {
@@ -200,20 +270,25 @@ public class Method {
         // the parameters in the method call
         String[] params = extractParameters(line);
         // check if the number of parameters is the same
-        validateParameterCount(methodName, originalParams, params);
-        // check if the parameters are the same type
-        validateParameterTypes(methodName, originalParams, params);
+        try{
+           validateParameterCount(methodName, originalParams, params);
+           // check if the parameters are the same type
+            validateParameterTypes(methodName, originalParams, params);
+        }
+        catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+
     }
 
-    private boolean isValidMethodCall(String line) {
-        return line.matches(methodCallRegex);
+    private  String extractMethodName(String line) {
+        Pattern pattern = Pattern.compile(METHOD_CALL_REGEX);
+        Matcher matcher = pattern.matcher(line);
+        return matcher.group(1);
     }
 
-    private String extractMethodName(String line) {
-        return line.substring(0, line.indexOf('(')).trim();
-    }
+    private  String[] extractParameters(String line) throws Exception {
 
-    private String[] extractParameters(String line) throws Exception {
         String paramsPart = line.split("\\(")[1].split("\\)")[0].trim(); // Get content between parentheses
         if (paramsPart.isEmpty()) {
             return new String[0]; // No parameters
@@ -221,15 +296,15 @@ public class Method {
         return paramsPart.split("\\s*,\\s*"); // Split by commas
     }
 
-    private void validateParameterCount(String methodName,
-                                        List<Map<String, String>> originalParams,
-                                        String[] params) throws Exception {
+    private  void validateParameterCount(String methodName,
+                                               List<Map<String, String>> originalParams,
+                                               String[] params) throws Exception {
         if (originalParams.size() != params.length) {
             throw new Exception("Invalid number of parameters for method " + methodName);
         }
     }
 
-    private void validateParameterTypes(String methodName,
+    private  void validateParameterTypes1(String methodName,
                                         List<Map<String, String>> originalParams,
                                         String[] params) throws Exception {
         for (int i = 0; i < params.length; i++) {
@@ -241,47 +316,21 @@ public class Method {
         }
     }
 
-    private boolean isValidParameter(String type, String param) {
-        if (type.equals("double")) {
-            return param.matches(regexInt) || param.matches(regexDouble);
-        } else if (type.equals("boolean")) {
-            return param.matches(regexBoolean) || param.matches(regexInt) || param.matches(regexDouble);
-        } else if (type.equals("int")) {
-            return param.matches(regexInt);
-        } else if (type.equals("String")) {
-            return param.matches(regexString);
-        } else if (type.equals("char")) {
-            return param.matches(regexChar);
-        } else if (type.equals("final")) { // if the type is final, its still legal to call the method with a non final parameter
-            return true;
+    private  boolean isValidParameter(String type, String param) {
+        // if the type is final, its still legal to call the method with a none final parameter
+        if (type.startsWith("final ")) {
+            type = type.substring(6); // Remove the "final " prefix
         }
-        return false; // Unknown type
+        // Check if the parameter matches the expected type
+        return switch (type) {
+            case "double" -> param.matches(Variable.doubleNumRegex) || param.matches(Variable.intNumRegex);
+            case "boolean" ->
+                    param.matches(Variable.booleanRegex) || param.matches(Variable.intNumRegex) || param.matches(Variable.doubleNumRegex);
+            case "int" -> param.matches(Variable.intNumRegex);
+            case "String" -> param.matches(Variable.stringRegex);
+            case "char" -> param.matches(Variable.charRegex);
+            default -> false;
+        };
     }
 
-
-    // get the method name
-    public String getName() {
-        return name;
-    }
-
-    // get the parameters
-    public List<Map<String, String>> getParameters() {
-        return parameters;
-    }
-
-    private List<Map<String, String>> getLocalVariables() {
-        return localVariables;
-    }
-
-    public boolean isVarInLocalAndAssigned(String varName) {
-        for (Map<String, String> localVar : localVariables) {
-            if (localVar.get("name").equals(varName)) {
-                /// / TODO: check if the variable is assigned
-                if (Variable.isAssigned(localVar)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 }

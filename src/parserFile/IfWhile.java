@@ -2,72 +2,46 @@ package parserFile;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.ArrayList;
 import java.util.List;
 
 public class IfWhile {
-    private static final String conditionRegex = "^if\\s+\\(\\s*([a-zA-Z0-9_!><=+/*-]+)\\s*\\)\\s*\\{$";
-    private static final String validValueRegex = "true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0-9]*";
-    private static final String multipleConditionRegex = validValueRegex + "\\s*(\\|\\||&&)\\s*" + validValueRegex;
+    /**
+     * Regex to match and extract the condition from an if/while statement
+     */
+    private static final String conditionRegex = "^\\s*if\\s*\\(([^)]*)\\)\\s*\\{$\n";
+    /**
+     * Regex to match a valid variable or constant (int/double or boolean) inside the condition
+     */
+
+    private static final String validCondSimpl = "true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0-9]*";
+    /**
+     * Regex to match multiple conditions separated by || or &&
+     */
+    private static final String multipleConditionRegex = validCondSimpl + "^ *(\\s*(\\|\\||&&)\\s*" +
+            validCondSimpl+")*?$";
 
 
     private final List<String> body;
-    private String condition;
-    //private final Method method;
+    private final Variable variable;
+    private final List<Variable> variableScopeList = new ArrayList<>();
+    private final Method methodFuncs= new Method(null);
 
-    public IfWhile(List<String> body) {
+    public IfWhile(List<String> body, Variable variable, List<Variable> variableScopeList) {
         this.body = body;
         //this.method = method;
         //this.condition = extractCondition(body.get(0));
     }
 
-    public void parserSubroutine(){
-        try{
+
+    public void parserIfWhileScope() {
+        try {
             parserConditionLine(); // parser the first line of the if/while
-            parserBody();
-        }
-        catch (Exception e) {
+            handleBody(); // parser the body of the if/while
+        } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
+
         }
     }
-
-    private void parserBody() throws Exception {
-        for (int i= 1; i<body.size(); i++){
-            String line = this.body.get(i);
-            // Check if the line is a valid statement
-            if (line.startsWith("if") || line.startsWith("while")) {
-                // TODO: SEND THE NEW BODY TO THE IF/WHILE PARSER
-                List<String> body = Parser.getIfWhileScope(i);
-                IfWhile ifWhile = new IfWhile(body);
-                // recursive call for condition and body
-                ifWhile.parserConditionLine();
-                ifWhile.parserBody();
-            }
-            else if (line.startsWith("int") || line.startsWith("char") || line.startsWith("String") ||
-                    line.startsWith("double") || line.startsWith("boolean")) {
-                Variable variable = new Variable(line);
-                try {
-                    // check if the var is in the local or global list:
-                    variable.checkLine(line, varProperties.LOCAL);
-                    variable.checkLine(line, varProperties.GLOBAL);
-                }
-                catch (Exception e){
-                    throw new Exception("var declaration error: " + e.getMessage());
-                }
-            }
-            else if (line.startsWith("return")) {
-                // handle return call inside the if/while
-                Method.handleReturn(line);
-            }
-            // if its none of the above it might be a call to a method: it might throw an error
-            else{
-                // handle method call
-                method.handleMethodCall(line);
-            }
-        }
-    }
-
-
 
     private String extractCondition(String line) throws Exception {
         // Regex to match and extract the condition
@@ -88,35 +62,109 @@ public class IfWhile {
         }
     }
 
-    private void parserConditionLine() throws Exception {
-        this.condition = extractCondition(body.get(0));
+    private String parserConditionLine() throws Exception {
+        return extractCondition(body.get(0));
     }
 
-    private boolean parserCondition(String condition){
+
+    private void handleBody () throws Exception {
+            for (int i = 0; i < body.size(); i++) {
+                String line = body.get(i);
+                // Check if the line is a valid statement
+                if (methodFuncs.isVariableDeclaration(line)) {
+                    try {
+                        // check if the var is in the local or global list:
+                        isVariableDefinedInAnyScope(line);
+                    } catch (Exception e) {
+                        throw new Exception("var declaration error: " + e.getMessage());
+                    }
+                }
+                // check if its a if/while statement
+                else if (line.matches(Parser.IF_WHILE_REGEX)) {
+                    List<String> body = Parser.getIfWhileScope(i);
+                    IfWhile ifWhile = new IfWhile(body, new Variable(), variableScopeList);
+                    ifWhile.parserIfWhileScope();
+                }
+                else if (line.matches(Parser.METHOD_REGEX)) {
+                    throw new Exception("Method cannot contain another method");
+                }
+                // check if it is last in the method: if all of the lines after are
+                else if (line.matches(Parser.RETURN_REGEX)) {
+                    continue;
+                }
+                else if (line.matches(Method.METHOD_CALL_REGEX)) {
+                    methodFuncs.throwFromMethodCall(line);
+                }
+                else {
+                    throw new Exception("Invalid line syntax: " + line);
+                }
+            }
+        }
+
+        private void isVariableDefinedInAnyScope (String line) throws Exception {
+            boolean foundInScope = false;
+
+            // Check the local scopes from innermost to outermost
+            for (int i = variableScopeList.size() - 1; i >= 0; i--) {
+                try {
+                    variableScopeList.get(i).checkLine(line, varProperties.LOCAL);
+                    foundInScope = true; // Found in a local scope
+                    break; // Exit the loop as soon as it is found
+                } catch (Exception ignored) {
+                    // Continue checking other scopes if this one fails
+                }
+            }
+            if (!foundInScope) {
+                try {
+                    // Check the global scope if not found in local scopes
+                    variable.checkLine(line, varProperties.GLOBAL);
+                    foundInScope = true; // Found in global scope
+                } catch (Exception ignored) {
+                    // If global scope also fails, do nothing here (handled below)
+                }
+            }
+            // If not found in any scope, throw an exception
+            if (!foundInScope) {
+                throw new Exception("Variable is not defined in any scope: " + line);
+            }
+        }
+
+    private boolean parserCondition(String condition) throws Exception {
         // Trim whitespace around the condition
         condition = condition.trim();
-        if (condition == null || condition.isEmpty()) {
-            return false;
+        if (condition.isEmpty()) {
+            throw new Exception("Empty condition");
         }
         // parser boolean condition: Regex for a valid variable or constant (int/double or boolean)
         // Check for single condition
-        if (!condition.matches(validValueRegex)) {
-            return false;
+
+        // Regex for multiple conditions (no nested parentheses allowed)
+        else if (!condition.matches(multipleConditionRegex)&& !condition.matches(validCondSimpl)) {
+            throw new Exception("Invalid condition: " + condition);
         }
 
-        Pattern pattern = Pattern.compile(validValueRegex);
-        Matcher matcher = pattern.matcher(condition);
+        Pattern pattern1 = Pattern.compile(validCondSimpl);
+        Matcher matcher1 = pattern1.matcher(condition);
+        Pattern pattern2 = Pattern.compile(multipleConditionRegex);
+        Matcher matcher2 = pattern2.matcher(condition);
 
-        while (matcher.find()) {
-            String value = matcher.group(); // Extract the matched value (variable, constant, or boolean)
+        while (matcher1.matches()) {
+            String[] values = condition.split(" *\\|\\|&&"); // Extract the matched value (variable, constant, or boolean)
             // Validate the value (example: check if variables are declared/initialized)
-            if (!isValidValue(value)) {
-                return false; // If any value is invalid, return false
+            for (String val :values) {
+                if (!isValidValue(val)) {
+                    return false; // If any value is invalid, return false
+                }
             }
         }
-        // Regex for multiple conditions (no nested parentheses allowed)
-        if (!condition.matches(multipleConditionRegex)) {
-            return false;
+        while (matcher2.matches()) {
+            String[] values = condition.split(" *\\|\\|&&"); // Extract the matched value (variable, constant, or boolean)
+            // Validate the value (example: check if variables are declared/initialized)
+            for (String val :values) {
+                if (!isValidValue(val)) {
+                    return false; // If any value is invalid, return false
+                }
+            }
         }
         return true;
     }
@@ -127,16 +175,14 @@ public class IfWhile {
     // 3. a constant
     private boolean isValidValue(String value) {
         // CHECK IF THERE IS A VARIABLE IN THE LOCAL OR GLOBAL LIST
-        if (Method.isVarInLocalAndAssigned(value)){
-            return true;
-        }
-        /// / TODO////
-        else if (variable.isVarInGlobal(value)){
-            if (variable.isAssigned(value)){
-            return true;
+        for (int i = variableScopeList.size() - 1; i >= 0; i--){
+            if (variableScopeList.get(i).isValidVariableinCondition(value, varProperties.LOCAL)){
+                return true;
             }
         }
-
+        if(variable.isValidVariableinCondition(value, varProperties.GLOBAL)){
+            return true;
+        }
         else if (isConstant(value)){
             return true;
         }
@@ -147,10 +193,8 @@ public class IfWhile {
     private boolean isConstant(String value) {
         // Add logic to check if the value is a constant
         // For example, check if the value is an integer, double, or boolean
-        if (value.matches(FINALVARAIBLE.intNumRegex) || value.matches(FINALVARAIBLE.doubleNumRegex) || value.matches(FINALVARAIBLE.booleanRegex)){
-            return true;
-        }
-        return false;
+        return value.matches(Variable.intNumRegex) || value.matches(Variable.doubleNumRegex) ||
+                value.matches(Variable.booleanRegex);
     }
 
 
