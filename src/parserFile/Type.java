@@ -1,15 +1,15 @@
 package parserFile;
 
-public enum type {
+public enum Type {
      INT("int"),
      CHAR("char"),
-     STRING("String"),
+     STRING("string"),
      DOUBLE("double"),
      BOOLEAN("boolean");
 
      private final String type;
 
-     type(String type) {
+     Type(String type) {
           this.type = type;
      }
 

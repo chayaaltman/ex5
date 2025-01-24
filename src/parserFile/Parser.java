@@ -50,7 +50,7 @@ public class Parser {
             } else if (line.matches(COMMENT_REGEX)) {
                 continue;
             } else if (line.matches(ILLEGAL_COMMENT_REGEX)) {
-                throw new Exception("Wrong comment type");
+                throw new Exception("Wrong comment Type");
             }
             // Example: Check if the line ends with ';', '{', or '}'
 

@@ -76,7 +76,7 @@ public class Method {
                 String[] paramParts = param.trim().split("\\s+");
                 String paramType = paramParts[0].trim();
                 String paramName = paramParts[1].trim();
-                // Create a map for the parameter and its type
+                // Create a map for the parameter and its Type
                 Map<String, String> paramMap = new HashMap<>();
                 paramMap.put("type", paramType);
                 paramMap.put("name", paramName);
@@ -217,7 +217,7 @@ public class Method {
         // check if the number of parameters is the same
         try{
            validateParameterCount(methodName, originalParams, params);
-           // check if the parameters are the same type
+           // check if the parameters are the same Type
             validateParameterTypes(methodName, originalParams, params);
         }
         catch (Exception e){
@@ -259,7 +259,7 @@ public class Method {
             // if is a variable make sure it is assigned
             boolean flag2= variable.isValidVariableinCondition(param, varProperties.LOCAL);
             if (!flag1 && !flag2) {
-                throw new Exception("Invalid parameter type for method " + methodName);
+                throw new Exception("Invalid parameter Type for method " + methodName);
             }
         }
     }
@@ -280,13 +280,13 @@ public class Method {
         String type = originalParams.get(index).get("type");
         String param = params[index];
 
-        // Check if the parameter matches the expected type
+        // Check if the parameter matches the expected Type
         boolean isValid = isValidParameter(type, param);
 
         if (!isValid) {
             // If the parameter is a variable, check if it is defined in any scope
             if (!isVariableDefinedInAnyScope(param)) {
-                throw new Exception("Invalid parameter type for method " + methodName);
+                throw new Exception("Invalid parameter Type for method " + methodName);
             }
         }
 
@@ -311,11 +311,11 @@ public class Method {
 
 
     private  boolean isValidParameter(String type, String param) {
-        // if the type is final, its still legal to call the method with a none final parameter
+        // if the Type is final, its still legal to call the method with a none final parameter
         if (type.startsWith("final ")) {
             type = type.substring(6); // Remove the "final " prefix
         }
-        // Check if the parameter matches the expected type
+        // Check if the parameter matches the expected Type
         return switch (type) {
             case "double" -> param.matches(Variable.doubleNumRegex) || param.matches(Variable.intNumRegex);
             case "boolean" ->
