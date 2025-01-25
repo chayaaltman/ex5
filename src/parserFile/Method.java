@@ -16,10 +16,11 @@ public class Method {
     /**
     * The regex for the method declaration "void methodName(int a, double b, String c...) {
      **/
-    private static final String METHOD_NAME_REGEX="?:[a-zA-Z][a-zA-Z]*|_[a-zA-Z0-9][a-zA-Z0-9_]*";
+    private static final String METHOD_NAME_REGEX="[a-zA-Z][a-zA-Z]*|_[a-zA-Z0-9][a-zA-Z0-9_]*";
     private static final String methodDeclarationRegex ="^ *void +("+METHOD_NAME_REGEX+") *\\(( *(int|char|double|" +
             "boolean|String) +"+Variable.valNameRegex+" *(, *(int|char|double|boolean|String) +"+Variable.valNameRegex+")*)?" +
             " *\\) *\\{ *$";
+    private static String methodRegex = "^(\\w+)\\s+(\\w+)\\s*\\((.*)\\)$";
 
     /**
      * The regex for the return statement "return;"
@@ -54,24 +55,53 @@ public class Method {
         }
     }
 
-    public void methodDeclaration(String line) throws Exception{
-        String [] arr = line.split("\\(");
-        String methodName = arr[0].trim().split("\\s+")[1];
-        if (isMethodExists(methodName)){
-            throw new Exception(methodName+" already is used as a different method");
+    public void methodDeclaration(String line) throws Exception {
+        line = line.trim();
+        if (!line.endsWith("{")) {
+            throw new Exception("Invalid method declaration: " + line);
         }
-        String paramsPart = arr[1].split("\\)")[0].trim();
-        if (!paramsPart.isEmpty()){
-            String [] params = paramsPart.split(",");
-            for (String param : params){
-                String [] paramParts = param.trim().split("\\s+");
+
+        line = line.substring(0, line.length() - 1).trim();
+        Pattern pattern = Pattern.compile(methodRegex);
+        Matcher matcher = pattern.matcher(line);
+
+        if (!matcher.matches()) {
+            throw new Exception("Invalid method declaration: " + line);
+        }
+        String returnType = matcher.group(1);
+        String methodName = matcher.group(2);
+        String params = matcher.group(3);
+
+        if (!returnType.equals("void")) {
+            throw new Exception("Invalid return type: " + returnType);
+        }
+
+        if (!methodName.matches(METHOD_NAME_REGEX)) {
+            throw new Exception("Invalid method name: " + methodName);
+        }
+
+        if (isMethodExists(methodName)) {
+            throw new Exception(methodName + " already is used as a different method");
+        }
+
+        if (params != null && !params.isEmpty()) {
+            String[] paramsArr = params.split(",");
+            for (String param : paramsArr) {
+                String[] paramParts = param.trim().split("\\s+");
+                if (paramParts.length != 2) {
+                    throw new Exception("Invalid parameter: " + param);
+                }
                 String paramType = paramParts[0].trim();
                 String paramName = paramParts[1].trim();
+                if (!paramType.matches("int|double|boolean|String|char")) {
+                    throw new Exception("Invalid parameter type: " + paramType);
+                }
                 Map<String, String> paramMap = new HashMap<>();
                 paramMap.put("type", paramType);
                 paramMap.put("name", paramName);
                 this.parameters.add(paramMap);
             }
+
         }
         allMethods.add(Map.of(methodName, parameters));
     }
@@ -138,22 +168,23 @@ public class Method {
      */
     private void handleBody() throws Exception {
         boolean returnFlag = false; // Check if the method ends with a return statement
-
-        for (int i = 0; i < body.size(); i++) {
+        System.out.println("body: "+body);
+        for (int i = 1; i < body.size()-1; i++) {
             String line = body.get(i);
-
+            System.out.println("line: "+line);
             if (isVariableDeclaration(line)) {
                 handleVariables(line);
             } else if (line.matches(Parser.IF_WHILE_REGEX)) {
                 handleIfWhileStatement(i);
             } else if (isReturnStatement(line, i)) {
                 returnFlag = true;
-            } else if (!line.matches(Parser.METHOD_REGEX)) {
+            } else if (line.matches(Parser.METHOD_REGEX)) {
                 throw new Exception("Method cannot contain another method");
             } else if (line.matches(METHOD_CALL_REGEX)) {
                 throwFromMethodCall(line);
             } else {
-                throw new Exception("Invalid line syntax: " + line);
+                handleVariables(line);
+                //throw new Exception("Invalid line syntax: " + line);
             }
         }
         if (!returnFlag) {
@@ -162,7 +193,12 @@ public class Method {
     }
 
     public  boolean isVariableDeclaration(String line) {
-        return line.matches(Parser.VAR_DEC_REGEX) || line.matches(Variable.VARIABLE_BODY_REGEX);
+        if (line.startsWith("int") || line.startsWith("double") || line.startsWith("boolean") ||
+                line.startsWith("String") || line.startsWith("char") || line.startsWith("final")) {
+            return true;
+        }
+        //return line.matches(Parser.VAR_DEC_REGEX) || line.matches(Variable.VARIABLE_BODY_REGEX);
+        return false;
     }
 
     public void handleIfWhileStatement(int i) throws Exception {

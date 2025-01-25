@@ -53,10 +53,12 @@ public class Parser {
                 throw new Exception("Wrong comment Type");
             }
             // Example: Check if the line ends with ';', '{', or '}'
-
-            else if (!line.matches(LEGAL_END_LINE_REGEX)) {
+            else if(!line.endsWith(";") && !line.endsWith("{") && !line.endsWith("}")) {
                 throw new Exception("invalid end of line");
             }
+//            else if (!line.matches(LEGAL_END_LINE_REGEX)) {
+//                throw new Exception("invalid end of line");
+//            }
             // Check if the line is a variable declaration
             else if (line.startsWith("final") || line.startsWith("int") || line.startsWith("String") ||
                     line.startsWith("double") || line.startsWith("char") || line.startsWith("boolean")) {

@@ -1,17 +1,19 @@
-test003.sjava 0 int member test with negative value
-test007.sjava 1 int member test with illegal value: string2
-test011.sjava 0 boolean member test no value
-test017.sjava 1 boolean member test with illegal value: string2
-test052.sjava 1 int member equals future variable
-test058.sjava 0 declare member without any type
-test061.sjava 1 array double empty
-test067.sjava 1 array int with one int value
-test106.sjava 0 empty void method no parameters
-test115.sjava 1 mistyped void
+test003.sjava 0 int member test with negative value  OK
+test007.sjava 1 int member test with illegal value: string2  OK
+test011.sjava 0 boolean member test no value OK
+test017.sjava 1 boolean member test with illegal value: string2 OK
+test052.sjava 1 int member equals future variable OK
+test058.sjava 0 declare member without any type OK
+test061.sjava 1 array double empty OK
+test067.sjava 1 array int with one int value OK
+test106.sjava 0 empty void method no parameters OK
+test115.sjava 1 mistyped void OK
 test204.sjava 0 int local variable test with zero value
+// out of index error
 test257.sjava 1 assign member to returned method value
+// in our message we say the problem is with the var declaration, but it's actually with the return statement
 test261.sjava 1 return int local variable test
-test274.sjava 1 multi line comment in many lines test
+test274.sjava 1 multi line comment in many lines test OK
 test407.sjava 1 local variable with name of existing parameter name (different type)
 test420.sjava 1 member line white spaces test 10
 test427.sjava 0 local variable line white spaces test 1

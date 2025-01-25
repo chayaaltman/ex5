@@ -50,39 +50,49 @@ public class Variable {
     private void checkBody(String type, String body, varProperties scope, Boolean isFinal) throws Exception{
         HashMap<String, HashMap<varProperties, Boolean>> variableValueMap = new HashMap<>();
         String[] array = body.split("\\s+");
+        System.out.println("array "+array[0]);
         String variableName = array[0];
+        try {
+            variableName.matches(valNameRegex);
+        } catch (Exception e) {
+            throw new Exception("Invalid variable name");
+        }
         String value = null;
         boolean hasValue = false;
-        if (array[1].equals("=")){
+        if (array.length > 1){
+        if (array[1].equals("=")) {
             for (int i = 2; i < array.length; i++) {
                 value = array[i];
                 hasValue = true;
                 boolean isValidValue = switch (type) {
                     case "int" -> value == null || value.matches(intNumRegex) || value.matches(valNameRegex);
-                    case "double" -> value == null || value.matches(doubleNumRegex) || value.matches(valNameRegex);
-                    case "String" -> value == null || value.matches(stringRegex) || value.matches(valNameRegex);
+                    case "double" ->
+                            value == null || value.matches(doubleNumRegex) || value.matches(valNameRegex);
+                    case "String" ->
+                            value == null || value.matches(stringRegex) || value.matches(valNameRegex);
                     case "char" -> value == null || value.matches(charRegex) || value.matches(valNameRegex);
-                    case "boolean" -> value == null || value.matches(booleanRegex) || value.matches(valNameRegex);
+                    case "boolean" ->
+                            value == null || value.matches(booleanRegex) || value.matches(valNameRegex);
                     default -> false;
                 };
                 if (!isValidValue) {
                     throw new Exception("Invalid value for variable " + variableName + " of Type " + type);
                 }
-                if (value==null&&isFinal){
+                if (value == null && isFinal) {
                     throw new Exception("final but variable was not assigned");
                 }
-                if (isValUsed(Type.valueOf(type.toUpperCase()), variableName, scope))
-                {
+                if (isValUsed(Type.valueOf(type.toUpperCase()), variableName, scope)) {
                     throw new Exception(("variable is already used as a different Type"));
                 }
-                if (hasValue){
-                    if (value.matches(valNameRegex)){
-                        if (!isVarAssignedToType(scope, value, Type.valueOf(type.toUpperCase()))){
-                            throw  new Exception("variable is not assigned to right Type");
+                if (hasValue) {
+                    if (value.matches(valNameRegex)) {
+                        if (!isVarAssignedToType(scope, value, Type.valueOf(type.toUpperCase()))) {
+                            throw new Exception("variable is not assigned to right Type");
                         }
                     }
                 }
             }
+        }
 
         }
 

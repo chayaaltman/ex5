@@ -76,6 +76,7 @@ public class IfWhile {
 
 
     private void handleBody () throws Exception {
+        System.out.println(body);
             for (int i = 0; i < body.size(); i++) {
                 String line = body.get(i);
                 // Check if the line is a valid statement
@@ -86,6 +87,9 @@ public class IfWhile {
                     } catch (Exception e) {
                         throw new Exception("var declaration error: " + e.getMessage());
                     }
+                }
+                else if(!line.endsWith(";") && !line.endsWith("{") && !line.endsWith("}")) {
+                    throw new Exception("invalid end of line");
                 }
                 // check if its a if/while statement
                 else if (line.matches(Parser.IF_WHILE_REGEX)) {
