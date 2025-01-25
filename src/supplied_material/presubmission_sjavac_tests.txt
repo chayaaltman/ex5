@@ -8,15 +8,13 @@ test061.sjava 1 array double empty OK
 test067.sjava 1 array int with one int value OK
 test106.sjava 0 empty void method no parameters OK
 test115.sjava 1 mistyped void OK
-test204.sjava 0 int local variable test with zero value
-// out of index error
-test257.sjava 1 assign member to returned method value
-// in our message we say the problem is with the var declaration, but it's actually with the return statement
-test261.sjava 1 return int local variable test
+test204.sjava 0 int local variable test with zero value OK
+test257.sjava 1 assign member to returned method value OK
+test261.sjava 1 return int local variable test OK
 test274.sjava 1 multi line comment in many lines test OK
-test407.sjava 1 local variable with name of existing parameter name (different type)
-test420.sjava 1 member line white spaces test 10
-test427.sjava 0 local variable line white spaces test 1
+test407.sjava 1 local variable with name of existing parameter name (different type) OK
+test420.sjava 1 member line white spaces test 10 OK
+test427.sjava 0 local variable line white spaces test  OK
 test452.sjava 1 extra parentheses error
 test474.sjava 1 2 methods with the same name
 test501.sjava 0 complex test 1

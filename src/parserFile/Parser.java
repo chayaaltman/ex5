@@ -11,8 +11,8 @@ public class Parser {
     public static final String ILLEGAL_COMMENT_REGEX =  "^(/\\*.*)|(.*\\*/)$";
     public static final String LEGAL_END_LINE_REGEX = "^(.*[;{]|})$";
     public static final String VAR_DEC_REGEX ="^(final +)?(int|String|double|char|boolean)" ;
-    public static final String IF_WHILE_REGEX = "^(if|while)";
-    public static final String METHOD_REGEX = "^void";
+    public static final String IF_WHILE_REGEX = "^\\s*(if|while) *\\(( *.*)\\) *\\{ *$";
+    public static final String METHOD_REGEX = "^\\s*void";
     public static final String RETURN_REGEX = "^return";
 
     private static List<String> lines = new ArrayList<>(); // Stores lines read from the file
@@ -64,7 +64,7 @@ public class Parser {
                     line.startsWith("double") || line.startsWith("char") || line.startsWith("boolean")) {
                 Variable variable = new Variable();
                 try {
-                    variable.checkLine(line, varProperties.GLOBAL);
+                    variable.checkLine(line, varProperties.GLOBAL, null);
                 } catch (Exception e) {
                     throw new Exception(e.getMessage());
                 }
@@ -91,10 +91,8 @@ public class Parser {
                 } catch (Exception e) {
                     throw new Exception(e.getMessage());
                 }
-                //method.methodDeclaration(line);
-                // add scope to the list of scopes
                 methodScopes.put(method.getMethodName(), methodScope);
-                i = methodScope.size();
+                i = methodScope.size()+i-1;
             }
             // for example: calling in the global scope for a method is illegal! throw an error
             else if (line.matches(RETURN_REGEX)) {
@@ -106,9 +104,10 @@ public class Parser {
             }
         }
         for (String methodName : methodScopes.keySet()){
+            System.out.println("method "+methodName);
             Method method = new Method(methodScopes.get(methodName));
             try {
-                method.handleMethod();
+                method.handleMethod(methodName);
             }
             catch (Exception e){
                 throw new Exception(e.getMessage());
@@ -140,19 +139,19 @@ public class Parser {
         return methodScope;
     }
 
-    public static List<String> getIfWhileScope(int index) {
+    public static List<String> getIfWhileScope(int index , List<String> body) {
         List<String> ifWhileScope = new ArrayList<>();
         int braceCount = 0;
         boolean insideIfWhile = false;
-        for (int i=index; i<lines.size(); i++) {
-            if (lines.get(i).contains("{")) {
+        for (int i=index; i<body.size(); i++) {
+            if (body.get(i).contains("{")) {
                 braceCount++;
                 insideIfWhile = true;
             }
             if (insideIfWhile) {
-                ifWhileScope.add(lines.get(i));
+                ifWhileScope.add(body.get(i));
             }
-            if (lines.get(i).contains("}")) {
+            if (body.get(i).contains("}")) {
                 braceCount--;
                 if (braceCount == 0) {
                     insideIfWhile = false;
