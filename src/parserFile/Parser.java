@@ -57,10 +57,9 @@ public class Parser {
             else if (!line.matches(LEGAL_END_LINE_REGEX)) {
                 throw new Exception("invalid end of line");
             }
-
             // Check if the line is a variable declaration
-            else if (matcher.find() || matcher2.find()) {
-                // add a checkLine function
+            else if (line.startsWith("final") || line.startsWith("int") || line.startsWith("String") ||
+                    line.startsWith("double") || line.startsWith("char") || line.startsWith("boolean")) {
                 Variable variable = new Variable();
                 try {
                     variable.checkLine(line, varProperties.GLOBAL);
@@ -68,12 +67,21 @@ public class Parser {
                     throw new Exception(e.getMessage());
                 }
             }
+//            else if (matcher.matches() || matcher2.matches()) {
+//                // add a checkLine function
+//                Variable variable = new Variable();
+//                try {
+//                    variable.checkLine(line, varProperties.GLOBAL);
+//                } catch (Exception e) {
+//                    throw new Exception(e.getMessage());
+//                }
+//            }
             // starts with if or while
             else if (line.matches(IF_WHILE_REGEX)) {
                 throw new Exception("If/While statements are not allowed in the global scope");
             }
             // a method call
-            else if (line.matches(METHOD_REGEX)) {
+            else if (line.startsWith("void")) {
                 List<String> methodScope = getMethodScope(i);
                 Method method = new Method(methodScope);
                 try {

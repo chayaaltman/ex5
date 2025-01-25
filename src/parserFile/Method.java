@@ -54,45 +54,71 @@ public class Method {
         }
     }
 
-    public void methodDeclaration(String line) throws Exception {
-        // Match the regex
-        if (!line.matches(methodDeclarationRegex)) {
-            throw new Exception("Invalid method declaration: " + line);
-        }
-        //String methodName = line.split("\\(")[0].trim().split("\\s+")[1];  // Extract method name
-        Pattern pattern = Pattern.compile(methodDeclarationRegex);
-        Matcher matcher = pattern.matcher(line);
-        /// / *********CHECK GROUPS*********
-        String methodName = matcher.group(1);
+    public void methodDeclaration(String line) throws Exception{
+        String [] arr = line.split("\\(");
+        String methodName = arr[0].trim().split("\\s+")[1];
         if (isMethodExists(methodName)){
             throw new Exception(methodName+" already is used as a different method");
         }
-        // Extract the parameters (if any)
-        String paramsPart = matcher.group(2);
-        //String  paramsPart = line.split("\\(")[1].split("\\)")[0].trim();  // Get everything between parentheses
-        if (!paramsPart.isEmpty()) {
-            String[] params = paramsPart.split(",");
-            for (String param : params) {
-                String[] paramParts = param.trim().split("\\s+");
+        String paramsPart = arr[1].split("\\)")[0].trim();
+        if (!paramsPart.isEmpty()){
+            String [] params = paramsPart.split(",");
+            for (String param : params){
+                String [] paramParts = param.trim().split("\\s+");
                 String paramType = paramParts[0].trim();
                 String paramName = paramParts[1].trim();
-                // Create a map for the parameter and its Type
                 Map<String, String> paramMap = new HashMap<>();
                 paramMap.put("type", paramType);
                 paramMap.put("name", paramName);
-                // Add the parameter map to the list for this method
-                Map<String, List<Map<String, String>>> methodMap = new HashMap<>();
-                // check if the method name is already in the list of methods names
-                // add the parameters to the list of parameters
                 this.parameters.add(paramMap);
-                // add the method name and the parameters to the method map
-                this.name = methodName;
-                methodMap.put(this.name, this.parameters);
-                allMethods.add(methodMap);
             }
         }
-        allMethods.add(Map.of(methodName, parameters)); // add the new method to the method names list
+        allMethods.add(Map.of(methodName, parameters));
     }
+
+//    public void methodDeclaration(String line) throws Exception {
+//        // Match the regex
+//        if (!line.matches(methodDeclarationRegex)) {
+//            throw new Exception("Invalid method declaration: " + line);
+//        }
+//        //String methodName = line.split("\\(")[0].trim().split("\\s+")[1];  // Extract method name
+//        Pattern pattern = Pattern.compile(methodDeclarationRegex);
+//        Matcher matcher = pattern.matcher(line);
+//        System.out.println("line: "+line);
+//        System.out.println("matcher: "+matcher);
+//        /// / *********CHECK GROUPS*********
+//        String methodName = matcher.group(1);
+//        System.out.println("method name: "+methodName);
+//        if (isMethodExists(methodName)){
+//            throw new Exception(methodName+" already is used as a different method");
+//        }
+//        // Extract the parameters (if any)
+//        String paramsPart = matcher.group(2);
+//        System.out.println("paramsPart: "+paramsPart);
+//        //String  paramsPart = line.split("\\(")[1].split("\\)")[0].trim();  // Get everything between parentheses
+//        if (!paramsPart.isEmpty()) {
+//            String[] params = paramsPart.split(",");
+//            for (String param : params) {
+//                String[] paramParts = param.trim().split("\\s+");
+//                String paramType = paramParts[0].trim();
+//                String paramName = paramParts[1].trim();
+//                // Create a map for the parameter and its Type
+//                Map<String, String> paramMap = new HashMap<>();
+//                paramMap.put("type", paramType);
+//                paramMap.put("name", paramName);
+//                // Add the parameter map to the list for this method
+//                Map<String, List<Map<String, String>>> methodMap = new HashMap<>();
+//                // check if the method name is already in the list of methods names
+//                // add the parameters to the list of parameters
+//                this.parameters.add(paramMap);
+//                // add the method name and the parameters to the method map
+//                this.name = methodName;
+//                methodMap.put(this.name, this.parameters);
+//                allMethods.add(methodMap);
+//            }
+//        }
+//        allMethods.add(Map.of(methodName, parameters)); // add the new method to the method names list
+//    }
 
     public String getMethodName(){
         return this.name;

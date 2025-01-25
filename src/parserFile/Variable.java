@@ -9,6 +9,7 @@ public class Variable {
     private static final int IS_FINAL_GROUP_NUM=1;
     private static final int VARS_GROUP_NUM=3;
     public static final String valNameRegex= "[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*" ;
+    //public static final String valNameRegex = "[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*";
     public static final String intNumRegex= "[+-]?[0-9]+";
     public static final String doubleNumRegex= "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
     public static final String stringRegex= "\"[^\\\\'\",]+\"";
@@ -45,70 +46,126 @@ public class Variable {
         }
 
     }
-    private void checkBody(String type, String body, varProperties scope, Boolean is_final) throws Exception {
-        // Initialize a map to track variables and their properties
+
+    private void checkBody(String type, String body, varProperties scope, Boolean isFinal) throws Exception{
         HashMap<String, HashMap<varProperties, Boolean>> variableValueMap = new HashMap<>();
-
-        // Regex pattern to match individual variables and their optional values
-        Pattern pattern = Pattern.compile("("+valNameRegex+")" + "(?: *= *(" + allValueRegex + "))?");
-        Matcher matcher = pattern.matcher(body);
-//IM HERE THE VALUE THINKS ITS NULL EVEN THOUGH ITS NOT THE PROBLEM IS THEB GROUPS OF REGEX
-        while (matcher.find()) {
-            System.out.println(body);
-            String variableName = matcher.group(1);// Variable2 name
-            System.out.println("var name "+variableName);
-            String value = matcher.group(2); // Optional value, can be null// THE PRIBLEM IS HERE
-            boolean hasValue = value != null;
-
-            // Check if the value matches the Type
-            boolean isValidValue = switch (type) {
-                case "int" -> value == null || value.matches(intNumRegex) || value.matches(valNameRegex);
-                case "double" ->
-                        value == null || value.matches(doubleNumRegex) || value.matches(valNameRegex);
-                case "String" -> value == null || value.matches(stringRegex) || value.matches(valNameRegex);
-                case "char" -> value == null || value.matches(charRegex) || value.matches(valNameRegex);
-                case "boolean" -> value == null || value.matches(booleanRegex) || value.matches(valNameRegex);
-                default -> false;
-            };
-
-            if (!isValidValue) {
-                throw new Exception("Invalid value for variable " + variableName + " of Type " + type);
-            }
-            if (value==null&&is_final){
-                throw new Exception("final but variable was not assigned");
-            }
-            // checks if variable exists in map as a different Type
-            if (isValUsed(Type.valueOf(type.toUpperCase()), variableName, scope))
-            {
-                throw new Exception(("variable is already used as a different Type"));
-            }
-            System.out.println("value"+value);
-
-            if (hasValue){
-
-                if (value.matches(valNameRegex)){
-                    System.out.println("HEREbleName");
-                    // checks that the value is the same Type as variable and is assigned
-                    if (!isVarAssignedToType(scope, value, Type.valueOf(type.toUpperCase()))){
-                        throw  new Exception("variable is not assigned to right Type");
+        String[] array = body.split("\\s+");
+        String variableName = array[0];
+        String value = null;
+        boolean hasValue = false;
+        if (array[1].equals("=")){
+            for (int i = 2; i < array.length; i++) {
+                value = array[i];
+                hasValue = true;
+                boolean isValidValue = switch (type) {
+                    case "int" -> value == null || value.matches(intNumRegex) || value.matches(valNameRegex);
+                    case "double" -> value == null || value.matches(doubleNumRegex) || value.matches(valNameRegex);
+                    case "String" -> value == null || value.matches(stringRegex) || value.matches(valNameRegex);
+                    case "char" -> value == null || value.matches(charRegex) || value.matches(valNameRegex);
+                    case "boolean" -> value == null || value.matches(booleanRegex) || value.matches(valNameRegex);
+                    default -> false;
+                };
+                if (!isValidValue) {
+                    throw new Exception("Invalid value for variable " + variableName + " of Type " + type);
+                }
+                if (value==null&&isFinal){
+                    throw new Exception("final but variable was not assigned");
+                }
+                if (isValUsed(Type.valueOf(type.toUpperCase()), variableName, scope))
+                {
+                    throw new Exception(("variable is already used as a different Type"));
+                }
+                if (hasValue){
+                    if (value.matches(valNameRegex)){
+                        if (!isVarAssignedToType(scope, value, Type.valueOf(type.toUpperCase()))){
+                            throw  new Exception("variable is not assigned to right Type");
+                        }
                     }
                 }
             }
 
-            // Add the variable to the map with its properties
-            HashMap<varProperties, Boolean> properties = new HashMap<>();
-            properties.put(varProperties.IS_FINAL, is_final);
-            properties.put(varProperties.IS_ASSIGNED, hasValue);
-            variableValueMap.put(variableName, properties);
         }
 
-        // Store the variables in the appropriate map (global or local based on scope)
+        HashMap<varProperties, Boolean> properties = new HashMap<>();
+        properties.put(varProperties.IS_FINAL, isFinal);
+        properties.put(varProperties.IS_ASSIGNED, hasValue);
+        variableValueMap.put(variableName, properties);
         if (scope == varProperties.GLOBAL) {
             globalValMap.computeIfAbsent(Type.valueOf(type.toUpperCase()), k -> new ArrayList<>()).add(variableValueMap);
         } else {
             localValMap.computeIfAbsent(Type.valueOf(type.toUpperCase()), k -> new ArrayList<>()).add(variableValueMap);
         }
+
+
     }
+//    private void checkBody(String type, String body, varProperties scope, Boolean is_final) throws Exception {
+//        // Initialize a map to track variables and their properties
+//        HashMap<String, HashMap<varProperties, Boolean>> variableValueMap = new HashMap<>();
+//        // Regex pattern to match individual variables and their optional values
+//        //Pattern pattern = Pattern.compile("("+valNameRegex+ ")(?: *= *(" + allValueRegex + "))?");
+//        body = body.trim();
+//        Pattern pattern = Pattern.compile("\\b(" + valNameRegex + ")\\b(?: *= *(" + allValueRegex + "))?");
+//        //Pattern pattern = Pattern.compile("\\b(" + valNameRegex + ")\\b(?: *= *(" + allValueRegex + "))?");
+//        Matcher matcher = pattern.matcher(body);
+//        //IM HERE THE VALUE THINKS ITS NULL EVEN THOUGH ITS NOT THE PROBLEM IS THEB GROUPS OF REGEX
+//        while (matcher.find()) {
+//            System.out.println("body"+body);
+//            String variableName = matcher.group(1);// for input: int a = hhh; i want var name: a, value: hhh
+//            System.out.println("group 0 "+ matcher.group(0));
+//            System.out.println("group 1"+ matcher.group(1));
+//            System.out.println("group 2"+ matcher.group(2));
+//            String value = matcher.group(2); // Optional value, can be null// THE PROBLEM IS HERE
+//            System.out.println("value "+value);
+//            boolean hasValue = value != null;
+//
+//            // Check if the value matches the Type
+//            boolean isValidValue = switch (type) {
+//                case "int" -> value == null || value.matches(intNumRegex) || value.matches(valNameRegex);
+//                case "double" ->
+//                        value == null || value.matches(doubleNumRegex) || value.matches(valNameRegex);
+//                case "String" -> value == null || value.matches(stringRegex) || value.matches(valNameRegex);
+//                case "char" -> value == null || value.matches(charRegex) || value.matches(valNameRegex);
+//                case "boolean" -> value == null || value.matches(booleanRegex) || value.matches(valNameRegex);
+//                default -> false;
+//            };
+//
+//            if (!isValidValue) {
+//                throw new Exception("Invalid value for variable " + variableName + " of Type " + type);
+//            }
+//            if (value==null&&is_final){
+//                throw new Exception("final but variable was not assigned");
+//            }
+//            // checks if variable exists in map as a different Type
+//            if (isValUsed(Type.valueOf(type.toUpperCase()), variableName, scope))
+//            {
+//                throw new Exception(("variable is already used as a different Type"));
+//            }
+//            System.out.println("value"+value);
+//
+//            if (hasValue){
+//                if (value.matches(valNameRegex)){
+//                    System.out.println("HEREbleName");
+//                    // checks that the value is the same Type as variable and is assigned
+//                    if (!isVarAssignedToType(scope, value, Type.valueOf(type.toUpperCase()))){
+//                        throw  new Exception("variable is not assigned to right Type");
+//                    }
+//                }
+//            }
+//
+//            // Add the variable to the map with its properties
+//            HashMap<varProperties, Boolean> properties = new HashMap<>();
+//            properties.put(varProperties.IS_FINAL, is_final);
+//            properties.put(varProperties.IS_ASSIGNED, hasValue);
+//            variableValueMap.put(variableName, properties);
+//        }
+//
+//        // Store the variables in the appropriate map (global or local based on scope)
+//        if (scope == varProperties.GLOBAL) {
+//            globalValMap.computeIfAbsent(Type.valueOf(type.toUpperCase()), k -> new ArrayList<>()).add(variableValueMap);
+//        } else {
+//            localValMap.computeIfAbsent(Type.valueOf(type.toUpperCase()), k -> new ArrayList<>()).add(variableValueMap);
+//        }
+//    }
 
     private static boolean isValInList(ArrayList<HashMap<String, HashMap<varProperties,Boolean>>> lst, String val) {
         for (HashMap<String, HashMap<varProperties, Boolean>> map : lst) {
@@ -119,7 +176,7 @@ public class Variable {
         return false; // The value is not found
     }
 
-    private static boolean isVarAssigend(ArrayList<HashMap<String, HashMap<varProperties,Boolean>>> lst, String var){
+    private static boolean isVarAssigned(ArrayList<HashMap<String, HashMap<varProperties,Boolean>>> lst, String var){
         for (HashMap<String, HashMap<varProperties, Boolean>> map : lst) {
             if (map.containsKey(var)) {
                 return map.get(var).get(varProperties.IS_ASSIGNED);// The value exists in one of the maps
@@ -159,7 +216,7 @@ public class Variable {
             for (Type type : globalValMap.keySet()) {
                 if (my_type==type) {
                     if (isValInList(globalValMap.get(type), var)){
-                        return isVarAssigend(globalValMap.get(type), var);
+                        return isVarAssigned(globalValMap.get(type), var);
                     }
                 }
             }
@@ -169,7 +226,7 @@ public class Variable {
                 if (my_type==type) {
                     if (isValInList(localValMap.get(type), var))
                     {
-                        return isVarAssigend(localValMap.get(type), var);
+                        return isVarAssigned(localValMap.get(type), var);
                     }
                 }
             }
