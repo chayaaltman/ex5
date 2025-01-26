@@ -146,7 +146,7 @@ public class IfWhile {
      * @param line
      * @throws Exception
      */
-        private void handleVariableDeclaration(String line) throws VarNotDeclaredException {
+    private void handleVariableDeclaration(String line) throws VarNotDeclaredException {
         try {
             // Check if the variable is declared in the current scope
             isVariableDefinedInAnyScope(line);

@@ -17,12 +17,12 @@ public class Parser {
     /**
      * Regular expressions for the different types of lines
      */
-    public static final String COMMENT_REGEX = "^//.*$";
-    public static final String ILLEGAL_COMMENT_REGEX =  "^(/\\*.*)|(.*\\*/)$";
-    public static final String VAR_DEC_REGEX ="^(final +)?(int|String|double|char|boolean)" ;
+    private static final String COMMENT_REGEX = "^//.*$";
+    private static final String ILLEGAL_COMMENT_REGEX =  "^(/\\*.*)|(.*\\*/)$";
+    private static final String VAR_DEC_REGEX ="^(final +)?(int|String|double|char|boolean)" ;
     public static final String IF_WHILE_REGEX = "^\\s*(if|while) *\\(( *.*)\\) *\\{ *$";
     public static final String METHOD_REGEX = "^\\s*void";
-    public static final String RETURN_REGEX = "^return";
+    private static final String RETURN_REGEX = "^return";
 
     private static List<String> lines = new ArrayList<>(); // Stores lines read from the file
     private Map<String, List<String>> methodScopes = new HashMap();
@@ -125,7 +125,7 @@ public class Parser {
     }
 
 
-    public List<String> getMethodScope(int index) {
+    private List<String> getMethodScope(int index) {
         List<String> methodScope = new ArrayList<>();
         int braceCount = 0;
         boolean insideMethod = false;

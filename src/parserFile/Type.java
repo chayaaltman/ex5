@@ -6,7 +6,7 @@ package parserFile;
 public enum Type {
      INT("int"),
      CHAR("char"),
-     STRING("string"),
+     STRING("String"),
      DOUBLE("double"),
      BOOLEAN("boolean");
 

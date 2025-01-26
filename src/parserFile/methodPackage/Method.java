@@ -201,7 +201,7 @@ public class Method {
      * Get the name of the method
      * @return
      */
-    public String getMethodName(){
+    private String getMethodName(){
         return this.name;
     }
 
@@ -272,7 +272,7 @@ public class Method {
      * @param i
      * @throws Exception
      */
-    public void handleIfWhileStatement(int i) throws Exception {
+    private void handleIfWhileStatement(int i) throws Exception {
         try {
             handleIfWhile(i);
         } catch (Exception e) {
@@ -286,7 +286,7 @@ public class Method {
      * @param index
      * @return
      */
-    public boolean isReturnStatement(String line, int index) {
+    private boolean isReturnStatement(String line, int index) {
         int LAST_LINE_OF_CODE = body.size() -2;
         return line.matches(RETURN_REGEX) && index == body.size() - LAST_LINE_OF_CODE;
     }
@@ -297,7 +297,7 @@ public class Method {
      * @param line
      * @throws Exception
      */
-    public  void throwFromMethodCall(String line) throws Exception {
+    public void throwFromMethodCall(String line) throws Exception {
         try {
             handleMethodCall(line);
         } catch (Exception e) {
@@ -311,7 +311,7 @@ public class Method {
      * @return
      * @throws Exception
      */
-    public List<Map<String, String>> getMethodParameters(String methodName) throws Exception {
+    private List<Map<String, String>> getMethodParameters(String methodName) throws Exception {
         for (Map<String, List<Map<String, String>>> methodMap : allMethods) {
             if (methodMap.containsKey(methodName)) {
                 return methodMap.get(methodName);
@@ -325,7 +325,7 @@ public class Method {
      * @param line
      * @throws Exception
      */
-    public void handleVariables(String line) throws Exception {
+    private void handleVariables(String line) throws Exception {
         try {
             // Try checking the line as a local variable
             this.variable.checkLine(line, VarProperties.LOCAL, allMethods.get(0).get(getMethodName()));
@@ -346,7 +346,7 @@ public class Method {
      * @param index
      * @throws Exception
      */
-    public void handleIfWhile(int index) throws Exception {
+    private void handleIfWhile(int index) throws Exception {
         // Get the body of the if/while statement
         List<String> body = Parser.getIfWhileScope(index, this.body);
         // Create a new IfWhile object and parse the body
@@ -365,7 +365,7 @@ public class Method {
      * @param line
      * @throws Exception
      */
-    public void handleMethodCall(String line) throws Exception {
+    private void handleMethodCall(String line) throws Exception {
         // check if the method is defined
         String methodName = extractMethodName(line);
         if (!isMethodExists(methodName)) {

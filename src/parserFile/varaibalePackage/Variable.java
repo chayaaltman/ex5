@@ -272,7 +272,7 @@ public class Variable {
      * @param my_type
      * @return
      */
-    public boolean isVarAssignedToType(VarProperties scope, String var, Type my_type){
+    private boolean isVarAssignedToType(VarProperties scope, String var, Type my_type){
         if (scope== VarProperties.GLOBAL){
             for (Type type : globalValMap.keySet()) {
                 if (my_type==type) {
