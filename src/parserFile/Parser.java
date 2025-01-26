@@ -12,7 +12,6 @@ import static parserFile.varaibalePackage.Variable.VARIABLE_BODY_REGEX;
 public class Parser {
     public static final String COMMENT_REGEX = "^//.*$";
     public static final String ILLEGAL_COMMENT_REGEX =  "^(/\\*.*)|(.*\\*/)$";
-    public static final String LEGAL_END_LINE_REGEX = "^(.*[;{]|})$";
     public static final String VAR_DEC_REGEX ="^(final +)?(int|String|double|char|boolean)" ;
     public static final String IF_WHILE_REGEX = "^\\s*(if|while) *\\(( *.*)\\) *\\{ *$";
     public static final String METHOD_REGEX = "^\\s*void";
@@ -59,10 +58,6 @@ public class Parser {
             else if(!line.endsWith(";") && !line.endsWith("{") && !line.endsWith("}")) {
                 throw new Exception("invalid end of line");
             }
-//            else if (!line.matches(LEGAL_END_LINE_REGEX)) {
-//                throw new Exception("invalid end of line");
-//            }
-            // Check if the line is a variable declaration
             else if (line.startsWith("final") || line.startsWith("int") || line.startsWith("String") ||
                     line.startsWith("double") || line.startsWith("char") || line.startsWith("boolean")) {
                 Variable variable = new Variable();

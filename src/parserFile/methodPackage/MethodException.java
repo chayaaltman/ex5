@@ -5,7 +5,7 @@ public class MethodException extends Exception {
     private final ErrorType errorType;
 
     public enum ErrorType {
-
+        METHOD_ERROR("Error in method"),
       METHOD_DECLARATION("Method declaration is invalid"),
       RETURN_STATEMENT("Return statement is invalid"),
       RETURN_TYPE("Return type is invalid"),

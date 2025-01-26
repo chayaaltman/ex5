@@ -9,15 +9,25 @@ import java.io.*;
  * It verifies the file format, checks for its existence, and processes it using a `Parser` class.
  */
 public class Sjavac {
-    // Constants representing program states
-
+    /**
+        Legal represents a legal file
+     */
     private static final  int LEGAL =0;
+    /**
+     * Illegal represents an illegal file
+     */
     private static final int ILLEGAL=1;
+    /**
+     * IO_ERROR represents an error in the file
+     */
     private static final int IO_ERROR =2;
-
-    // Constants for file validation
-
+    /**
+     * END_OF_FILE_REGEX represents the end of the file
+     */
     private static final String END_OF_FILE_REGEX=".sjava";
+    /**
+     * FILE_NOT_FOUND_ERROR_MSG represents an error message for a file not found
+     */
     private static final String FILE_NOT_FOUND_ERROR_MSG="Invalid file name";
 
     /**
@@ -80,12 +90,14 @@ public class Sjavac {
             if (args.length == 1) {
                 try {
                     run(args[0]);
-                    System.out.println(LEGAL);
+                    System.out.println(LEGAL); // if the file is legal
                 }
                 catch (IOException e){
+                    // if there is an IO error, print the error message
                     System.out.println(IO_ERROR+": "+ e.getMessage());
                 }
                 catch (Exception e) {
+                    // if there is an illegal file, print the error message
                     System.out.println(ILLEGAL +  ": " +e.getMessage());
                 }
             }
@@ -94,6 +106,7 @@ public class Sjavac {
                 throw new ArgumentAmountException();
             }
         }
+
         catch (ArgumentAmountException e){
             System.out.println(IO_ERROR +": " +e.getMessage());
         }

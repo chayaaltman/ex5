@@ -12,8 +12,9 @@ public class ArgumentAmountException extends IOException {
      * Initializes the exception with a predefined error message:
      * "Invalid amount of arguments should only have one."
      */
+    private static final String MESSAGE_EXCEPTION = "Invalid amount of arguments. should only have one.";
     public ArgumentAmountException() {
-        super("Invalid amount of arguments should only have one.");
+        super(MESSAGE_EXCEPTION);
     }
 
 }

@@ -1,5 +1,8 @@
 package parserFile;
 
+/**
+ * Enum that represents the types of variables that can be used in the program.
+ */
 public enum Type {
      INT("int"),
      CHAR("char"),
@@ -11,9 +14,5 @@ public enum Type {
 
      Type(String type) {
           this.type = type;
-     }
-
-     public String getType() {
-          return type;
      }
 }
