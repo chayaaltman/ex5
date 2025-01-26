@@ -15,6 +15,6 @@ test274.sjava 1 multi line comment in many lines test OK
 test407.sjava 1 local variable with name of existing parameter name (different type) OK
 test420.sjava 1 member line white spaces test 10 OK
 test427.sjava 0 local variable line white spaces test  OK
-test452.sjava 1 extra parentheses error
-test474.sjava 1 2 methods with the same name
-test501.sjava 0 complex test 1
+test452.sjava 1 extra parentheses error OK
+test474.sjava 1 2 methods with the same name OK
+test501.sjava 0 complex test 1  OK

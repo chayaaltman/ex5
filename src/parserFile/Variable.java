@@ -66,7 +66,8 @@ public class Variable {
 
         }
         else{
-            throw new Exception("invalid syntax for sjava variables ");
+            throw new VariablesExceptions.VariableSyntaxException();
+            //throw new Exception("invalid syntax for sjava variables ");
         }
 
     }
@@ -79,11 +80,13 @@ public class Variable {
         try {
             variableName.matches(valNameRegex);
         } catch (Exception e) {
-            throw new Exception("Invalid variable name");
+            throw new VariablesExceptions.VariableNameException();
+            //throw new Exception("Invalid variable name");
         }
         String value = null;
         if (isValUsed(Type.valueOf(type.toUpperCase()), variableName, scope, methodParameters)) {
-            throw new Exception(("variable is already used as a different Type"));
+            throw new VariablesExceptions.VarIsUsedException();
+            //throw new Exception(("variable is already used as a different Type"));
         }
         boolean hasValue = false;
         if (array.length > 1){
@@ -106,18 +109,22 @@ public class Variable {
                 };
 
                 if (!isValidValue) {
-                    throw new Exception("Invalid value for variable " + variableName + " of Type " + type);
+                    throw new VariablesExceptions.ValueTypeException();
+                    //throw new Exception("Invalid value for variable " + variableName + " of Type " + type);
                 }
                 if (value == null && isFinal) {
-                    throw new Exception("final but variable was not assigned");
+                    throw new VariablesExceptions.FinalVarException();
+                    //throw new Exception("final but variable was not assigned");
                 }
                 if (isValUsed(Type.valueOf(type.toUpperCase()), variableName, scope, methodParameters)) {
-                    throw new Exception(("variable is already used as a different Type"));
+                    //throw new Exception(("variable is already used as a different Type"));
+                    throw new VariablesExceptions.ValueTypeException();
                 }
                 assert value != null;
                 if (value.matches(valNameRegex)) {
                     if (!isVarAssignedToType(scope, value, Type.valueOf(type.toUpperCase()))) {
-                        throw new Exception("variable is not assigned or not assigned to right Type");
+                        throw new VariablesExceptions.AssignValueException();
+                        //throw new Exception("variable is not assigned or not assigned to right Type");
                     }
                 }
 
@@ -127,11 +134,7 @@ public class Variable {
                 addToMap(scope,Type.valueOf(type.toUpperCase()),variableName,properties);
             }
         }
-
         }
-
-
-
     }
 //    private void checkBody(String type, String body, varProperties scope, Boolean is_final) throws Exception {
 //        // Initialize a map to track variables and their properties

@@ -34,38 +34,7 @@ public class Sjavac {
                 throw new FileNotFoundException(FILE_NOT_FOUND_ERROR_MSG);
             }
     }
-
-//    private static void readFile(String filename) {
-//        FileReader fileReader = null;
-//        BufferedReader br = null;
-//        try {
-//            fileReader = new FileReader(filename); // Open the file
-//            br = new BufferedReader(fileReader);
-//
-//            String line;
-//            while ((line = br.readLine()) != null) {
-//                // Process each line (print it in this example)
-//                //check file
-//                System.out.println(line);
-//            }
-//        } catch (IOException e) {
-//            // Handle file-related errors
-//            System.out.println("An error occurred while reading the file: " + e.getMessage());
-//        } finally {
-//            // Ensure resources are closed
-//            try {
-//                if (br != null) {
-//                    br.close();
-//                }
-//                if (fileReader != null) {
-//                    fileReader.close();
-//                }
-//            } catch (IOException e) {
-//                System.out.println("An error occurred while closing the file: " + e.getMessage());
-//            }
-//        }
-//    }
-
+    
     private static void run (String fileName) throws Exception {
         try {
             openFile(fileName);

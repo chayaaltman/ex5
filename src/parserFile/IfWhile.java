@@ -5,6 +5,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
 
+/**
+ * This class is responsible for parsing if/while statements
+ * It checks the condition and the body of the if/while statement
+ * It also checks the scope of the variables inside the if/while statement
+ * It throws an exception if the if/while statement is invalid
+ *
+ */
 public class IfWhile {
     /**
      * Regex to match and extract the condition from an if/while statement
@@ -14,19 +21,24 @@ public class IfWhile {
      * Regex to match a valid variable or constant (int/double or boolean) inside the condition
      */
 
-    private static final String validCondSimpl = "true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0-9]*";
+    private static final String SIMPLE_COND_REGEX = "true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0-9]*";
     /**
      * Regex to match multiple conditions separated by || or &&
      */
-    private static final String multipleConditionRegex = validCondSimpl + "^ *(\\s*(\\|\\||&&)\\s*" +
-            validCondSimpl+")*?$";
+    private static final String MULTIPLE_CONDITION_REGEX = SIMPLE_COND_REGEX + "^ *(\\s*(\\|\\||&&)\\s*" +
+            SIMPLE_COND_REGEX +")*?$";
 
-    private int scope;
     private final List<String> body;
     private final Variable variable;
     private final List<Variable> variableScopeList = new ArrayList<>();
-    private final Method methodFuncs= new Method(null);
+    private final Method methodFunc = new Method(null);
 
+    /**
+     * Constructor for the IfWhile class
+     * @param body
+     * @param variable
+     * @param variableScopeList
+     */
     public IfWhile(List<String> body, Variable variable, List<Variable> variableScopeList) {
         this.body = body;
         this.variable = variable;
@@ -40,21 +52,27 @@ public class IfWhile {
         this.variableScopeList.add(variable);
     }
 
-
+    /**
+     * Parses the if/while statement
+     * @throws Exception if the if/while statement is invalid
+     */
     public void parserIfWhileScope() throws Exception {
         try {
             extractCondition(body.get(0));
             handleBody(); // parser the body of the if/while
         } catch (Exception e) {
             throw new Exception(e.getMessage());
-
         }
     }
 
+    /**
+     * Extracts the condition from the if/while statement
+     * @param line the if/while statement
+     * @throws Exception if the condition is invalid
+     */
     private void extractCondition(String line) throws Exception {
         // Regex to match and extract the condition
         // Matches "if(condition) {"
-
         Pattern pattern = Pattern.compile(Parser.IF_WHILE_REGEX);
         Matcher matcher = pattern.matcher(line);
         // Check if the line matches the pattern
@@ -76,13 +94,15 @@ public class IfWhile {
         }
     }
 
-
-
+    /**
+     * Handles the body of the if/while statement
+     * @throws Exception if the body is invalid
+     */
     private void handleBody () throws Exception {
             for (int i = 1; i < body.size(); i++) {
                 String line = body.get(i);
                 // Check if the line is a valid statement
-                if (methodFuncs.isVariableDeclaration(line)) {
+                if (methodFunc.isVariableDeclaration(line)) {
                     try {
                         // check if the var is in the local or global list:
                         isVariableDefinedInAnyScope(line);
@@ -93,7 +113,6 @@ public class IfWhile {
                 else if(!line.endsWith(";") && !line.endsWith("{") && !line.endsWith("}")) {
                     throw new Exception("invalid end of line");
                 }
-
                 // check if its a if/while statement
                 else if (line.matches(Parser.IF_WHILE_REGEX)) {
                     List<String> body = Parser.getIfWhileScope(i,this.body);
@@ -113,7 +132,7 @@ public class IfWhile {
                     continue;
                 }
                 else if (line.matches(Method.METHOD_CALL_REGEX)) {
-                    methodFuncs.throwFromMethodCall(line);
+                    methodFunc.throwFromMethodCall(line);
                 }
                 else if(!line.matches("^\\s*}\\s*$")&&!line.matches("\\s*")){
                     throw new Exception("Invalid line syntax: " + line);
@@ -157,11 +176,11 @@ public class IfWhile {
         // parser boolean condition: Regex for a valid variable or constant (int/double or boolean)
         // Check for single condition
         // Regex for multiple conditions (no nested parentheses allowed)
-        if (!condition.matches(multipleConditionRegex)&& !condition.matches(validCondSimpl)) {
+        if (!condition.matches(MULTIPLE_CONDITION_REGEX)&& !condition.matches(SIMPLE_COND_REGEX)) {
             throw new Exception("Invalid condition: " + condition);
         }
 
-        Pattern pattern1 = Pattern.compile(validCondSimpl);
+        Pattern pattern1 = Pattern.compile(SIMPLE_COND_REGEX);
         Matcher matcher1 = pattern1.matcher(condition);
 
         if (matcher1.matches()) {
@@ -174,7 +193,7 @@ public class IfWhile {
         }
 
         }
-        Pattern pattern2 = Pattern.compile(multipleConditionRegex);
+        Pattern pattern2 = Pattern.compile(MULTIPLE_CONDITION_REGEX);
         Matcher matcher2 = pattern2.matcher(condition);
 
         if (matcher2.matches()) {
