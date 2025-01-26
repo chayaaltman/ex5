@@ -31,18 +31,8 @@ public class Method {
      */
     private static final String PARAM_TYPE_REGEX = "int|double|boolean|String|char";
     /**
-     * The group for the return statement "return;"
-     */
-    private static final int RETURN_TYPE_GROUP = 1;
-    /**
-     * The group for the method name "methodName"
-     */
-    private static final int METHOD_NAME_GROUP = 2;
-
-    /**
      * The regex for the return statement "return;"
      */
-
     private static final String RETURN_REGEX = "^\\s*return\\s*;\\s*$";
     /**
      * The regex for the method call "methodName(a, b, c...);"
@@ -51,6 +41,35 @@ public class Method {
             + Variable.allValueRegex + "|" + Variable.valNameRegex + ")(\\s*,\\s*("
             + Variable.allValueRegex + "|" + Variable.valNameRegex + "))*)?\\s*\\)\\s*;$";
 
+    private static final String CLOSE_LINE_REGEX= "^\\s*}\\s*$";
+    private static final String EMPTY_LINE_REGEX= "\\S*";
+    private static final String PARAM_SPLIT_SPACE= "\\s+";
+    /**
+     * The groups index
+     */
+    private static final int RETURN_TYPE_GROUP = 1;
+    private static final int METHOD_NAME_GROUP = 2;
+    private static final int PARAMS_GROUP = 3;
+
+    private static final int NUM_OF_PARAMS_PARTS= 2;
+    private final static int BEGIN_INDEX_FINAL = 6;
+    /**
+     * Some finals strings
+     */
+    private static final String TYPE = "type";
+    private static final String NAME = "name";
+    private static final String PARAMS_SPLIT= ",";
+    private static final String RETURN_BEGIN = "return";
+    private static final String FINAL_REGEX = "final";
+    private final static String DOUBLE = "double";
+    private final static String BOOLEAN = "boolean";
+    private final static String INT = "int";
+    private final static String STRING = "String";
+    private final static String CHAR = "char";
+
+    /**
+     * The fields of the Method class
+     */
     private String name=null; // the name of the method
     private Variable variable;
     private List<Map<String, String>> parameters;
@@ -140,10 +159,10 @@ public class Method {
      */
     private void extractMethodDetails(Matcher matcher) throws MethodException {
         this.name = matcher.group(METHOD_NAME_GROUP); // set the name of the method
-        String params = matcher.group(3); // Get the parameters
+        String params = matcher.group(PARAMS_GROUP); // Get the parameters
         // Check if the parameters are valid
         if (params != null && !params.isEmpty()) {
-            String[] paramsArr = params.split(",");
+            String[] paramsArr = params.split(PARAMS_SPLIT);
             for (String param : paramsArr) { // Iterate over the parameters
                 Map<String, String> paramMap = getStringStringMap(param);
                 this.parameters.add(paramMap); // Add the parameter to the list
@@ -159,9 +178,9 @@ public class Method {
      * @throws MethodException
      */
     private static Map<String, String> getStringStringMap(String param) throws MethodException {
-        String[] paramParts = param.trim().split("\\s+");
+        String[] paramParts = param.trim().split(PARAM_SPLIT_SPACE);
         // Check if the parameter list is valid
-        if (paramParts.length != 2) {
+        if (paramParts.length != NUM_OF_PARAMS_PARTS) {
             throw  new MethodException(MethodException.ErrorType.PARAMETER);
         }
         // Extract the parameter type and name
@@ -173,8 +192,8 @@ public class Method {
         }
         // put the parameter type and name in a map
         Map<String, String> paramMap = new HashMap<>();
-        paramMap.put("type", paramType);
-        paramMap.put("name", paramName);
+        paramMap.put(TYPE, paramType);
+        paramMap.put(NAME, paramName);
         return paramMap;
     }
 
@@ -219,7 +238,7 @@ public class Method {
             // if the line is a return statement
             } else if (isReturnStatement(line, i)) {
                 returnFlag = true;}
-            else if(line.startsWith("return") && !line.matches(RETURN_REGEX)){
+            else if(line.startsWith(RETURN_BEGIN) && !line.matches(RETURN_REGEX)){
                 throw new MethodException(MethodException.ErrorType.RETURN_STATEMENT, line);
             // if the line is a new method declaration- throw an exception
             } else if (line.matches(Parser.METHOD_REGEX)) {
@@ -229,7 +248,7 @@ public class Method {
                 throwFromMethodCall(line);
             }
             // if the line is not empty and not a closing bracket, throw an exception
-            else if(!line.matches("^\\s*}\\s*$")&&!line.matches("\\s*")){
+            else if(!line.matches(CLOSE_LINE_REGEX)&&!line.matches(EMPTY_LINE_REGEX)){
                 throw new MethodException(MethodException.ErrorType.SYNTAX, line);
             }
         }
@@ -245,7 +264,7 @@ public class Method {
      * @return
      */
     public  boolean isVariableDeclaration(String line) {
-        return line.startsWith(PARAM_TYPE_REGEX) || line.startsWith("final");
+        return line.startsWith(PARAM_TYPE_REGEX) || line.startsWith(FINAL_REGEX);
     }
 
     /**
@@ -268,7 +287,8 @@ public class Method {
      * @return
      */
     public boolean isReturnStatement(String line, int index) {
-        return line.matches(RETURN_REGEX) && index == body.size() - 2;
+        int LAST_LINE_OF_CODE = body.size() -2;
+        return line.matches(RETURN_REGEX) && index == body.size() - LAST_LINE_OF_CODE;
     }
 
 
@@ -375,7 +395,7 @@ public class Method {
         Pattern pattern = Pattern.compile(METHOD_CALL_REGEX);
         Matcher matcher = pattern.matcher(line);
         if(matcher.matches()) {
-            return matcher.group(1);
+            return matcher.group(RETURN_TYPE_GROUP);
         }
         return null;
     }
@@ -476,18 +496,20 @@ public class Method {
      */
     private  boolean isValidParameter(String type, String param) {
         // if the Type is final, it's still legal to call the method with a none final parameter
-        if (type.startsWith("final ")) {
-            type = type.substring(6); // Remove the "final " prefix
+        String finalReg = FINAL_REGEX+ " ";
+        if (type.startsWith(finalReg)) {
+            type = type.substring(BEGIN_INDEX_FINAL); // Remove the "final " prefix
         }
         // Check if the parameter matches the expected Type
         return switch (type) {
-            case "double" -> param.matches(Variable.doubleNumRegex) || param.matches(Variable.intNumRegex);
-            case "boolean" ->
+            case DOUBLE -> param.matches(Variable.doubleNumRegex) || param.matches(Variable.intNumRegex);
+            case BOOLEAN ->
                     param.matches(Variable.booleanRegex) || param.matches(Variable.intNumRegex) || param.matches(Variable.doubleNumRegex);
-            case "int" -> param.matches(Variable.intNumRegex);
-            case "String" -> param.matches(Variable.stringRegex);
-            case "char" -> param.matches(Variable.charRegex);
+            case INT -> param.matches(Variable.intNumRegex);
+            case STRING -> param.matches(Variable.stringRegex);
+            case CHAR -> param.matches(Variable.charRegex);
             default -> false;
         };
     }
+
 }

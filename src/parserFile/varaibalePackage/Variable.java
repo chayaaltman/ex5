@@ -8,9 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Variable {
-    private static final int TYPE_GROUP_NUM=2;
-    private static final int IS_FINAL_GROUP_NUM=1;
-    private static final int VARS_GROUP_NUM=3;
+
     public static final String valNameRegex= "[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*" ;
     public static final String intNumRegex= "[+-]?[0-9]+";
     public static final String doubleNumRegex= "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
@@ -18,10 +16,41 @@ public class Variable {
     public static final String charRegex= "'[^\\\\'\",]'";
     public static final String booleanRegex= "true|false|"+intNumRegex+"|"+doubleNumRegex;
     public static final String allValueRegex= booleanRegex+"|"+stringRegex+"|"+charRegex;
-    public static final String VARIABLE_BODY_REGEX= valNameRegex+"(?: *= *(\\S.*))?(?:, *("+valNameRegex+")(?: *= *(\\S.*))?)* *; *$";
-    private static final String GENERAL_VAR_REGEX= "^(final +)?(int|String|double|char|boolean) +("+VARIABLE_BODY_REGEX+")";
-    private static final String DECLARE_REGEX = "^(final +)?(int|String|double|char|boolean) +(([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_])*(?: *= *(\\S.*))?(?:, *([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*)(?: *= *(\\S.*))?)*) *; *$";
-    private static HashMap<Type, ArrayList<HashMap<String, HashMap<VarProperties,Boolean>>>>globalValMap=new HashMap<>();;
+    public static final String VARIABLE_BODY_REGEX= valNameRegex+"(?: *= *(\\S.*))?(?:, *" +
+            "("+valNameRegex+")(?: *= *(\\S.*))?)* *; *$";
+    private static final String DECLARE_REGEX = "^(final +)?(int|String|double|char|boolean) +(([a-zA-Z][a-zA" +
+            "-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_])*(?: *= *(\\S.*))?(?:, *([a-zA-Z][a-zA-Z0-9_]*|" +
+            "_[a-zA-Z0-9][a-zA-Z0-9_]*)(?: *= *(\\S.*))?)*) *; *$";
+    /**
+    * Group numbers in the regex
+     */
+    private static final int TYPE_GROUP_NUM=2;
+    private static final int IS_FINAL_GROUP_NUM=1;
+    private static final int VARS_GROUP_NUM=3;
+    /**
+     * Some finals for the split function
+     */
+    private final static String SPLIT_REGEX = "\\s+";
+    private final static String ASSIGNMENT_REGEX = "=";
+    private final static int ASSIGNMENT_INDEX = 1;
+    private final static int BODY_INDEX = 2;
+    /**
+     * Some final strings for the types
+     */
+    private final static String DOUBLE = "double";
+    private final static String BOOLEAN = "boolean";
+    private final static String INT = "int";
+    private final static String STRING = "String";
+    private final static String CHAR = "char";
+    private final static String NAME = "name";
+    /**
+     * Global map for the variables.
+     */
+    private static HashMap<Type, ArrayList<HashMap<String, HashMap<VarProperties,Boolean>>>>
+            globalValMap=new HashMap<>();;
+    /**
+     * Local map for the variables.
+      */
     private HashMap<Type, ArrayList<HashMap<String,HashMap<VarProperties,Boolean>>>> localValMap;
 
     /**
@@ -105,11 +134,11 @@ public class Variable {
      * @throws Exception
      */
     private void checkBody(String type, String body, VarProperties scope, Boolean isFinal, List<Map<String, String>> methodParameters) throws Exception {
-        String[] array = body.split("\\s+");
+        String[] array = body.split(SPLIT_REGEX);
         String variableName = array[0];
         validateVariableName(variableName);
         checkVariableUsage(type, variableName, scope, methodParameters);
-        if (array.length > 1 && array[1].equals("=")) {
+        if (array.length > ASSIGNMENT_INDEX && array[1].equals(ASSIGNMENT_REGEX)) {
             processVariableAssignment(type, array, scope, isFinal, methodParameters, variableName);
         }
     }
@@ -131,7 +160,7 @@ public class Variable {
     private void processVariableAssignment(String type, String[] array, VarProperties scope, Boolean isFinal, List<Map<String, String>> methodParameters, String variableName) throws Exception {
         String value = null;
         boolean hasValue = false;
-        for (int i = 2; i < array.length; i++) {
+        for (int i = BODY_INDEX; i < array.length; i++) {
             value = array[i];
             hasValue = true;
             validateValue(type, value);
@@ -148,11 +177,11 @@ public class Variable {
 
     private void validateValue(String type, String value) throws VariableException {
         boolean isValidValue = switch (type) {
-            case "int" -> value == null || value.matches(intNumRegex) || value.matches(valNameRegex);
-            case "double" -> value == null || value.matches(doubleNumRegex) || value.matches(valNameRegex);
-            case "String" -> value == null || value.matches(stringRegex) || value.matches(valNameRegex);
-            case "char" -> value == null || value.matches(charRegex) || value.matches(valNameRegex);
-            case "boolean" -> value == null || value.matches(booleanRegex) || value.matches(valNameRegex);
+            case INT -> value == null || value.matches(intNumRegex) || value.matches(valNameRegex);
+            case DOUBLE -> value == null || value.matches(doubleNumRegex) || value.matches(valNameRegex);
+            case STRING -> value == null || value.matches(stringRegex) || value.matches(valNameRegex);
+            case  CHAR -> value == null || value.matches(charRegex) || value.matches(valNameRegex);
+            case BOOLEAN -> value == null || value.matches(booleanRegex) || value.matches(valNameRegex);
             default -> false;
         };
         if (!isValidValue) {
@@ -208,14 +237,13 @@ public class Variable {
     private  boolean isValUsed(Type valType, String valName, VarProperties scope, List<Map<String, String>> methodParameters) {
         if(methodParameters!=null){
             for (Map<String,String> map : methodParameters){
-                if (map.containsKey("name")){
-                    if(Objects.equals(map.get("name"), valName)){
+                if (map.containsKey(NAME)){
+                    if(Objects.equals(map.get(NAME), valName)){
                         return true;
                     }
                 }
             }
         }
-
         if (scope== VarProperties.GLOBAL){
             for (Type type : globalValMap.keySet()) {
                 if (valType!=type) {

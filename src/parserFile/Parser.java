@@ -7,9 +7,16 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 import static parserFile.varaibalePackage.Variable.VARIABLE_BODY_REGEX;
 
+/**
+ * Parser class that reads a file and parses it according to the Sjava language rules.
+ */
 public class Parser {
+    /**
+     * Regular expressions for the different types of lines
+     */
     public static final String COMMENT_REGEX = "^//.*$";
     public static final String ILLEGAL_COMMENT_REGEX =  "^(/\\*.*)|(.*\\*/)$";
     public static final String VAR_DEC_REGEX ="^(final +)?(int|String|double|char|boolean)" ;
@@ -19,9 +26,17 @@ public class Parser {
 
     private static List<String> lines = new ArrayList<>(); // Stores lines read from the file
     private Map<String, List<String>> methodScopes = new HashMap();
+    /**
+     * Constructor for the Parser class.
+     */
     public Parser() {
     }
 
+    /**
+     * Reads a file line by line and prints each line.
+     * @param filename
+     * @throws IOException
+     */
     public void readFile(String filename) throws IOException {
         try (FileReader fileReader = new FileReader(filename); // Open the file
              BufferedReader br = new BufferedReader(fileReader)) {
@@ -37,6 +52,10 @@ public class Parser {
         }
     }
 
+    /**
+     * Parses the file line by line and checks for syntax errors.
+     * @throws Exception
+     */
     public void parseFile() throws Exception {
         boolean isBlockComment = false;
         for (int i = 0; i < lines.size(); i++) {
@@ -151,6 +170,4 @@ public class Parser {
         }
         return ifWhileScope;
     }
-
-
 }
