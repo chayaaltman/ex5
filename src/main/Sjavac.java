@@ -4,22 +4,39 @@ import parserFile.Parser;
 
 import java.io.*;
 
+/**
+ * The `Sjavac` class is a simple static Java program for validating and parsing `.sjava` files.
+ * It verifies the file format, checks for its existence, and processes it using a `Parser` class.
+ */
 public class Sjavac {
+    // Constants representing program states
+
     private static final  int LEGAL =0;
     private static final int ILLEGAL=1;
     private static final int IO_ERROR =2;
+
+    // Constants for file validation
+
+    private static final String END_OF_FILE_REGEX=".sjava";
     private static final String FILE_NOT_FOUND_ERROR_MSG="Invalid file name";
 
+    /**
+     * Opens and validates a file. Checks if the file exists, is in the correct format, and parses it.
+     *
+     * @param filename The name of the file to open.
+     * @throws FileFormatException If the file does not have the correct `.sjava` extension.
+     * @throws FileNotFoundException If the file does not exist or is not a regular file.
+     * @throws Exception If any error occurs during file parsing.
+     */
     private static void openFile(String filename) throws Exception{
             File file = new File(filename);
             Parser parser = new Parser();
-            ///  check if the file is a .sjava file
-            if (!filename.endsWith(".sjava")) {
+            // check if the file is a .sjava file
+            if (!filename.endsWith(END_OF_FILE_REGEX)) {
                 throw new FileFormatException();
             }
-            /// check if the file exists
+            // check if the file exists
             if (file.exists()) {
-                // File exists and is a regular file
                 try{
                     parser.readFile(filename);
                     parser.parseFile();
@@ -27,31 +44,36 @@ public class Sjavac {
                 catch (Exception e){
                     throw new Exception(e.getMessage());
                 }
-            }
-            /// if the file does not exist
+            }// if the file does not exist
             else {
-                // File does not exist or is not a regular file
                 throw new FileNotFoundException(FILE_NOT_FOUND_ERROR_MSG);
             }
     }
-    
+
+    /**
+     * Runs the main logic for processing a file.
+     *
+     * @param fileName The name of the file to process.
+     * @throws Exception If any error occurs during file validation or parsing.
+     */
     private static void run (String fileName) throws Exception {
         try {
             openFile(fileName);
         }
-        catch (FileNotFoundException e) {
-            // Handle any unexpected errors
-            System.out.println(IO_ERROR +" "+ e.getMessage());
-        }
         catch (IOException e) {
-            System.out.println(IO_ERROR +" "+ e.getMessage());
+            throw new IOException(e.getMessage());
         }
         catch (Exception e){
             throw new Exception(e.getMessage());
         }
-
     }
 
+    /**
+     * The program's entry point. Validates the number of arguments and processes the provided file.
+     *
+     * @param args Command-line arguments. Expects exactly one argument (the file name).
+     * @throws ArgumentAmountException If the number of arguments is not exactly one.
+     */
     public static void main(String[] args) throws ArgumentAmountException {
         try{
             // if there is one argument, return the result of the run method
@@ -60,10 +82,12 @@ public class Sjavac {
                     run(args[0]);
                     System.out.println(LEGAL);
                 }
+                catch (IOException e){
+                    System.out.println(IO_ERROR+": "+ e.getMessage());
+                }
                 catch (Exception e) {
                     System.out.println(ILLEGAL +  ": " +e.getMessage());
                 }
-
             }
             // otherwise throw an exception
             else {

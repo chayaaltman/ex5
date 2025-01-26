@@ -1,10 +1,13 @@
 package parserFile;
+import parserFile.methodPackage.Method;
+import parserFile.varaibalePackage.Variable;
+
 import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static parserFile.Variable.VARIABLE_BODY_REGEX;
+import static parserFile.varaibalePackage.Variable.VARIABLE_BODY_REGEX;
 
 public class Parser {
     public static final String COMMENT_REGEX = "^//.*$";
@@ -64,20 +67,12 @@ public class Parser {
                     line.startsWith("double") || line.startsWith("char") || line.startsWith("boolean")) {
                 Variable variable = new Variable();
                 try {
-                    variable.checkLine(line, varProperties.GLOBAL, null);
+                    variable.checkLine(line, VarProperties.GLOBAL, null);
                 } catch (Exception e) {
                     throw new Exception(e.getMessage());
                 }
             }
-//            else if (matcher.matches() || matcher2.matches()) {
-//                // add a checkLine function
-//                Variable variable = new Variable();
-//                try {
-//                    variable.checkLine(line, varProperties.GLOBAL);
-//                } catch (Exception e) {
-//                    throw new Exception(e.getMessage());
-//                }
-//            }
+
             // starts with if or while
             else if (line.matches(IF_WHILE_REGEX)) {
                 throw new Exception("If/While statements are not allowed in the global scope");

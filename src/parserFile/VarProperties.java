@@ -1,5 +1,5 @@
 package parserFile;
 
-public enum varProperties {
+public enum VarProperties {
     IS_FINAL, IS_ASSIGNED , GLOBAL,LOCAL;
 }
