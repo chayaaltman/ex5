@@ -6,17 +6,16 @@ public class MethodException extends Exception {
 
     public enum ErrorType {
         METHOD_ERROR("Error in method"),
-      METHOD_DECLARATION("Method declaration is invalid"),
-      RETURN_STATEMENT("Return statement is invalid"),
-      RETURN_TYPE("Return type is invalid"),
-      METHOD_EXISTS("Method already exists"),
-      PARAMETER("Parameter is invalid"),
-      NEW_METHOD("Nested methods are invalid"),
-      SYNTAX("Syntax is invalid"),
-      METHOD_CALL("Method call is invalid"),
-      PARAMETER_TYPE("Parameter type is invalid"),
-      PARAMETER_NUMBER("Invalid number of parameters for method call"),
-      NO_RETURN_STATEMENT("Missing return statment");
+        METHOD_DECLARATION("Method declaration is invalid"),
+        RETURN_TYPE("Return type is invalid"),
+        METHOD_EXISTS("Method already exists"),
+        PARAMETER("Parameter is invalid"),
+        NEW_METHOD("Nested methods are invalid"),
+        SYNTAX("Syntax is invalid"),
+        METHOD_CALL("Method call is invalid"),
+        PARAMETER_TYPE("Parameter type is invalid"),
+        PARAMETER_NUMBER("Invalid number of parameters for method call"),
+        NO_RETURN_STATEMENT("Problem with  return statement  ");
 
 
       private final String message;

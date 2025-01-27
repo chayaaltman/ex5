@@ -1,9 +1,9 @@
-package parserFile.ifWhilePackage;
+package parserFile.methodPackage;
 
 import parserFile.Parser;
 import parserFile.VarProperties;
-import parserFile.methodPackage.Method;
 import parserFile.varaibalePackage.Variable;
+import parserFile.varaibalePackage.VariableException;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -18,6 +18,8 @@ import java.util.List;
  *
  */
 public class IfWhile {
+
+    private static final String BOOL_REGEX = "(true|false)";
     /**
      * Regex to match a valid variable or constant (int/double or boolean) inside the condition
      */
@@ -26,8 +28,9 @@ public class IfWhile {
     /**
      * Regex to match multiple conditions separated by || or &&
      */
-    private static final String MULTIPLE_CONDITION_REGEX = SIMPLE_COND_REGEX + "^ *(\\s*(\\|\\||&&)\\s*" +
-            SIMPLE_COND_REGEX +")*?$";
+    private static final String SEPARATE_REGEX="\\s*\\|\\||&&\\s*";
+    private static final String MULTIPLE_CONDITION_REGEX = "^ *(true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0" +
+            "-9]*)(\\s*(\\|\\||&&)\\s*(true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0-9]*))*\\s*$";
     /**
      * Group index for the condition inside the parentheses
      */
@@ -99,7 +102,7 @@ public class IfWhile {
             }
         }
         else {
-            throw new InvalidCoditionException(line);
+            throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION, line);
         }
     }
 
@@ -125,19 +128,19 @@ public class IfWhile {
         if (methodFunc.isVariableDeclaration(line)) {
             handleVariableDeclaration(line);
         // if the line does not end with ; or { or }, throw an exception
-        } else if (!line.endsWith(";") && !line.endsWith("{") && !line.endsWith("}")) {
-            throw new Exception(line);
+        } else if (!line.endsWith(";")&&!line.endsWith("}")&&!line.endsWith("{")) {
+            throw new MethodException(MethodException.ErrorType.SYNTAX, line);
         // Check if the line is an if/while statement
         } else if (line.matches(Parser.IF_WHILE_REGEX)) {
             handleIfWhileStatement(line, index);
-        // Check if the line is a method call
+        // Check if the line is a method declaration
         } else if (line.matches(Parser.METHOD_REGEX)) {
-            throw new Exception("Method cannot contain another method");
+            throw new MethodException(MethodException.ErrorType.NEW_METHOD);
         // Check if the line is a method call
         } else if (line.matches(Method.METHOD_CALL_REGEX)) {
             methodFunc.throwFromMethodCall(line);
-        } else if (!line.matches("^\\s*}\\s*$") && !line.matches("\\s*")) {
-            throw new Exception(line);
+        } else if (!line.matches(Method.CLOSE_LINE_REGEX) && !line.matches(Method.EMPTY_LINE_REGEX)) {
+            throw new ifWhileException(ifWhileException.ErrorType.SYNTAX, line);
         }
     }
 
@@ -146,13 +149,13 @@ public class IfWhile {
      * @param line
      * @throws Exception
      */
-    private void handleVariableDeclaration(String line) throws VarNotDeclaredException {
+    private void handleVariableDeclaration(String line) throws  VariableException {
         try {
             // Check if the variable is declared in the current scope
             isVariableDefinedInAnyScope(line);
         } catch (Exception e) {
             // If the variable is not declared in any scope, throw an exception
-            throw new VarNotDeclaredException(e.getMessage());
+            throw new VariableException(VariableException.ErrorType.VAR_NOT_DECLARED, line);
         }
     }
 
@@ -168,7 +171,6 @@ public class IfWhile {
 
     private void isVariableDefinedInAnyScope (String line) throws Exception {
             boolean foundInScope = false;
-
             // Check the local scopes from innermost to outermost
             for (int i = variableScopeList.size() - 1; i >= 0; i--) {
                 try {
@@ -190,44 +192,58 @@ public class IfWhile {
             }
             // If not found in any scope, throw an exception
             if (!foundInScope) {
-                throw new Exception("Variable is not defined in any scope: " + line);
+                throw new VariableException(VariableException.ErrorType.VAR_NOT_DECLARED, line);
             }
         }
 
-    private void parserCondition(String condition) throws Exception {
+    private void parserCondition(String condition) throws ifWhileException {
         // Trim whitespace around the condition
         if (condition.isEmpty()) {
-            throw new Exception("Empty condition");
+            throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION);
         }
-        // parser boolean condition: Regex for a valid variable or constant (int/double or boolean)
-        // Check for single condition
         // Regex for multiple conditions (no nested parentheses allowed)
         if (!condition.matches(MULTIPLE_CONDITION_REGEX)&& !condition.matches(SIMPLE_COND_REGEX)) {
-            throw new Exception("Invalid condition: " + condition);
+            throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION, condition);
         }
+        try {
+            parserSimpleCondition(condition);
+        }
+        catch(ifWhileException e){
+            throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION, condition);
+            }
+        try {
+            parserComplexCondition(condition);
+        }
+        catch(ifWhileException e){
+            throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION, condition);
+        }
+    }
 
+    private void parserSimpleCondition(String condition) throws ifWhileException {
         Pattern pattern1 = Pattern.compile(SIMPLE_COND_REGEX);
         Matcher matcher1 = pattern1.matcher(condition);
-
         if (matcher1.matches()) {
-            boolean isValid = condition.equals("true") || condition.equals("false");
+            boolean isValid = condition.matches(BOOL_REGEX);
             if (!isValidValue(condition)) {
-                    isValid = true;
-                }
-        if(!isValid) {
-            throw new Exception("Invalid condition: " + condition);
+                isValid = true;
+            }
+            if(!isValid) {
+                throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION, condition);
+            }
         }
+    }
 
-        }
+    private void parserComplexCondition(String condition) throws ifWhileException {
         Pattern pattern2 = Pattern.compile(MULTIPLE_CONDITION_REGEX);
         Matcher matcher2 = pattern2.matcher(condition);
 
         if (matcher2.matches()) {
-            String[] values = condition.split(" *\\|\\|&&"); // Extract the matched value (variable, constant, or boolean)
+            // Extract the matched value (variable, constant, or boolean)
+            String[] values = condition.split(SEPARATE_REGEX);
             // Validate the value (example: check if variables are declared/initialized)
             for (String val :values) {
                 if (!isValidValue(val)) {
-                    throw new Exception("Invalid condition: " + condition);
+                    throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION, condition);
                 }
             }
         }
@@ -247,11 +263,7 @@ public class IfWhile {
         if(variable.isValidVariableInCondition(value, VarProperties.GLOBAL)){
             return true;
         }
-        else if (isConstant(value)){
-            return true;
-        }
-
-        return false;
+        else return isConstant(value);
     }
 
     private boolean isConstant(String value) {

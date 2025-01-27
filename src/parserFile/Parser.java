@@ -3,6 +3,7 @@ import parserFile.methodPackage.Method;
 import parserFile.varaibalePackage.Variable;
 
 import java.io.*;
+import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,13 +20,16 @@ public class Parser {
      */
     private static final String COMMENT_REGEX = "^//.*$";
     private static final String ILLEGAL_COMMENT_REGEX =  "^(/\\*.*)|(.*\\*/)$";
-    private static final String VAR_DEC_REGEX ="^(final +)?(int|String|double|char|boolean)" ;
+    public static final String VAR_DEC_REGEX ="^\\s*(final +)?(int|String|double|char|boolean)\\b" ;
     public static final String IF_WHILE_REGEX = "^\\s*(if|while) *\\(( *.*)\\) *\\{ *$";
     public static final String METHOD_REGEX = "^\\s*void";
     private static final String RETURN_REGEX = "^return";
+    private static final String READ_FILE_ERR_MSG="An error occurred while reading the file: ";
+    public static final String OPEN_BRACKET="{";
+    public static final String CLOSE_BRACKET="}";
 
-    private static List<String> lines = new ArrayList<>(); // Stores lines read from the file
-    private Map<String, List<String>> methodScopes = new HashMap();
+    private static final List<String> lines = new ArrayList<>(); // Stores lines read from the file
+    private final Map<String, List<String>> methodScopes = new HashMap<>();
     /**
      * Constructor for the Parser class.
      */
@@ -44,11 +48,10 @@ public class Parser {
             while ((line = br.readLine()) != null) {
                 // Process each line (print it in this example)
                 lines.add(line);
-                System.out.println(line);
             }
         } catch (IOException e) {
             // Handle file-related errors
-            throw new IOException("An error occurred while reading the file: " + e.getMessage());
+            throw new IOException( READ_FILE_ERR_MSG+ e.getMessage());
         }
     }
 
@@ -57,42 +60,18 @@ public class Parser {
      * @throws Exception
      */
     public void parseFile() throws Exception {
-        boolean isBlockComment = false;
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
             ///  handle comments
-            System.out.println("Parsing line: " + line);
-            Pattern pattern = Pattern.compile(VAR_DEC_REGEX);
-            Matcher matcher = pattern.matcher(line);
-            Pattern pattern2 = Pattern.compile(VARIABLE_BODY_REGEX);
-            Matcher matcher2 = pattern2.matcher(line);
             if (line.isEmpty()) {
                 continue;
             } else if (line.matches(COMMENT_REGEX)) {
                 continue;
-            } else if (line.matches(ILLEGAL_COMMENT_REGEX)) {
-                throw new Exception("Wrong comment Type");
-            }
-            // Example: Check if the line ends with ';', '{', or '}'
-            else if(!line.endsWith(";") && !line.endsWith("{") && !line.endsWith("}")) {
-                throw new Exception("invalid end of line");
-            }
-            else if (line.startsWith("final") || line.startsWith("int") || line.startsWith("String") ||
-                    line.startsWith("double") || line.startsWith("char") || line.startsWith("boolean")) {
-                Variable variable = new Variable();
-                try {
-                    variable.checkLine(line, VarProperties.GLOBAL, null);
-                } catch (Exception e) {
-                    throw new Exception(e.getMessage());
-                }
-            }
-
-            // starts with if or while
-            else if (line.matches(IF_WHILE_REGEX)) {
-                throw new Exception("If/While statements are not allowed in the global scope");
             }
             // a method call
-            else if (line.startsWith("void")) {
+            Pattern pattern = Pattern.compile(METHOD_REGEX);
+            Matcher matcher = pattern.matcher(line);
+            if (matcher.find()) {
                 List<String> methodScope = getMethodScope(i);
                 Method method = new Method(methodScope);
                 try {
@@ -103,17 +82,47 @@ public class Parser {
                 methodScopes.put(method.getMethodName(), methodScope);
                 i = methodScope.size()+i-1;
             }
-            // for example: calling in the global scope for a method is illegal! throw an error
-            else if (line.matches(RETURN_REGEX)) {
-                throw new Exception("Cant return in the global scope");
-            }
             else {
-                // if there is a method call, it should be handled in the method class, so throw exception
-                throw new Exception("Invalid line syntax: " + line);
+                handleLine(line);
             }
+
         }
+        handleMethod();
+    }
+
+    private void handleLine(String line) throws Exception {
+        if (line.matches(ILLEGAL_COMMENT_REGEX)) {
+            throw new parseException(parseException.ErrorType.COMMENT_TYPE);
+        }
+        Pattern pattern = Pattern.compile(VAR_DEC_REGEX);
+        Matcher matcher = pattern.matcher(line);
+        if (matcher.find() ) {
+            Variable variable = new Variable();
+            try {
+                variable.checkLine(line, VarProperties.GLOBAL, null);
+            } catch (Exception e) {
+                throw new Exception(e.getMessage());
+            }}
+        // Example: Check if the line ends with ';', '{', or '}'
+        else if(!line.endsWith(";")&&!line.endsWith(CLOSE_BRACKET)&&!line.endsWith(OPEN_BRACKET)) {
+            throw new parseException(parseException.ErrorType.END_OF_LINE);
+        }
+        // starts with if or while
+        else if (line.matches(IF_WHILE_REGEX)) {
+            throw new parseException(parseException.ErrorType.IF_WHILE);
+        }
+        // for example: calling in the global scope for a method is illegal! throw an error
+        else if (line.matches(RETURN_REGEX)) {
+            throw new parseException(parseException.ErrorType.RETURN);
+        }
+        else {
+            // if there is a method call, it should be handled in the method class, so throw exception
+            throw new parseException(parseException.ErrorType.SYNTAX ,line);
+        }
+    }
+
+    private void handleMethod() throws Exception {
         for (String methodName : methodScopes.keySet()){
-            System.out.println("method "+methodName);
             Method method = new Method(methodScopes.get(methodName));
             try {
                 method.handleMethod(methodName);
@@ -124,43 +133,19 @@ public class Parser {
         }
     }
 
-
-    private List<String> getMethodScope(int index) {
-        List<String> methodScope = new ArrayList<>();
-        int braceCount = 0;
-        boolean insideMethod = false;
-        for (int i=index; i<lines.size(); i++) {
-            if (lines.get(i).contains("{")) {
-                braceCount++;
-                insideMethod = true;
-            }
-            if (insideMethod) {
-                methodScope.add(lines.get(i));
-            }
-            if (lines.get(i).contains("}")) {
-                braceCount--;
-                if (braceCount == 0) {
-                    insideMethod = false;
-                    break;
-                }
-            }
-        }
-        return methodScope;
-    }
-
-    public static List<String> getIfWhileScope(int index , List<String> body) {
-        List<String> ifWhileScope = new ArrayList<>();
+    private static List<String> getScope(int index, List<String> body) {
+        List<String> scope = new ArrayList<>();
         int braceCount = 0;
         boolean insideIfWhile = false;
         for (int i=index; i<body.size(); i++) {
-            if (body.get(i).contains("{")) {
+            if (body.get(i).contains(OPEN_BRACKET)) {
                 braceCount++;
                 insideIfWhile = true;
             }
             if (insideIfWhile) {
-                ifWhileScope.add(body.get(i));
+                scope.add(body.get(i));
             }
-            if (body.get(i).contains("}")) {
+            if (body.get(i).contains(CLOSE_BRACKET)) {
                 braceCount--;
                 if (braceCount == 0) {
                     insideIfWhile = false;
@@ -168,6 +153,15 @@ public class Parser {
                 }
             }
         }
-        return ifWhileScope;
+        return scope;
+    }
+
+
+    private List<String> getMethodScope(int index) {
+        return getScope(index, lines);
+    }
+
+    public static List<String> getIfWhileScope(int index , List<String> body) {
+        return getScope(index,body);
     }
 }

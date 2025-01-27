@@ -18,7 +18,8 @@ public class Variable {
     public static final String allValueRegex= booleanRegex+"|"+stringRegex+"|"+charRegex;
     public static final String VARIABLE_BODY_REGEX= valNameRegex+"(?: *= *(\\S.*))?(?:, *" +
             "("+valNameRegex+")(?: *= *(\\S.*))?)* *; *$";
-    private static final String DECLARE_REGEX = "^(final +)?(int|String|double|char|boolean) +(([a-zA-Z][a-zA" +
+    private static final String DECLARE_REGEX = "^(final +)?(int|String|double|char|boolean) +" +
+            "(([a-zA-Z][a-zA" +
             "-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_])*(?: *= *(\\S.*))?(?:, *([a-zA-Z][a-zA-Z0-9_]*|" +
             "_[a-zA-Z0-9][a-zA-Z0-9_]*)(?: *= *(\\S.*))?)*) *; *$";
     /**
@@ -67,7 +68,8 @@ public class Variable {
      * @param var
      * @param propertiesMap
      */
-    private void addToMap(VarProperties scope, Type type, String var, HashMap<VarProperties, Boolean> propertiesMap){
+    private void addToMap(VarProperties scope, Type type, String var, HashMap<VarProperties, Boolean>
+            propertiesMap){
         if (scope== VarProperties.GLOBAL){ // add to global map
             addToScopeMap(type, var, propertiesMap, globalValMap);
         }
@@ -84,7 +86,9 @@ public class Variable {
      * @param propertiesMap
      * @param varMap
      */
-    private void addToScopeMap(Type type, String var, HashMap<VarProperties, Boolean> propertiesMap, HashMap<Type, ArrayList<HashMap<String, HashMap<VarProperties, Boolean>>>> varMap) {
+    private void addToScopeMap(Type type, String var, HashMap<VarProperties, Boolean> propertiesMap,
+                               HashMap<Type, ArrayList<HashMap<String, HashMap<VarProperties, Boolean>>>>
+                                       varMap) {
         if(!varMap.containsKey(type)){ // if the type is not in the map
             varMap.put(type, new ArrayList<>());
             HashMap<String,HashMap<VarProperties,Boolean> > newMap = new HashMap<>();
@@ -105,10 +109,10 @@ public class Variable {
      * @param methodParameters
      * @throws Exception
      */
-    public void checkLine (String line , VarProperties scope, List<Map<String, String>> methodParameters) throws Exception {
+    public void checkLine (String line , VarProperties scope, List<Map<String, String>> methodParameters)
+            throws Exception {
         boolean is_final;
-        String type;
-        String body;
+        String type,body;
         Pattern pattern = Pattern.compile(DECLARE_REGEX); // compile the pattern
         Matcher matcher = pattern.matcher(line);
         //checks if the line is valid syntax
@@ -120,7 +124,7 @@ public class Variable {
         }
         else{
             // if the line is not valid syntax
-            throw new VariableException(VariableException.ErrorType.VARIABLE_SYNTAX);
+            throw new VariableException(VariableException.ErrorType.VARIABLE_SYNTAX, line);
         }
     }
 
@@ -138,8 +142,12 @@ public class Variable {
         String variableName = array[0];
         validateVariableName(variableName);
         checkVariableUsage(type, variableName, scope, methodParameters);
+
         if (array.length > ASSIGNMENT_INDEX && array[1].equals(ASSIGNMENT_REGEX)) {
             processVariableAssignment(type, array, scope, isFinal, methodParameters, variableName);
+        }
+        else if (isFinal) {
+            throw new VariableException(VariableException.ErrorType.FINAL_VARIABLE);
         }
     }
 
@@ -151,24 +159,26 @@ public class Variable {
         }
     }
 
-    private void checkVariableUsage(String type, String variableName, VarProperties scope, List<Map<String, String>> methodParameters) throws VariableException {
+    private void checkVariableUsage(String type, String variableName, VarProperties scope, List<Map<String,
+            String>> methodParameters) throws VariableException {
         if (isValUsed(Type.valueOf(type.toUpperCase()), variableName, scope, methodParameters)) {
             throw new VariableException(VariableException.ErrorType.VARIABLE_USED);
         }
     }
 
-    private void processVariableAssignment(String type, String[] array, VarProperties scope, Boolean isFinal, List<Map<String, String>> methodParameters, String variableName) throws Exception {
+    private void processVariableAssignment(String type, String[] array, VarProperties scope, Boolean isFinal,
+                                           List<Map<String, String>> methodParameters, String variableName )
+            throws VariableException {
         String value = null;
         boolean hasValue = false;
         for (int i = BODY_INDEX; i < array.length; i++) {
             value = array[i];
             hasValue = true;
             validateValue(type, value);
-            if (value == null && isFinal) {
-                throw new VariableException(VariableException.ErrorType.FINAL_VARIABLE);
-            }
             checkVariableUsage(type, variableName, scope, methodParameters);
-            if (value.matches(valNameRegex) && !isVarAssignedToType(scope, value, Type.valueOf(type.toUpperCase()))) {
+            assert value != null;
+            if (value.matches(valNameRegex) && !isVarAssignedToType(scope, value,
+                    Type.valueOf(type.toUpperCase()))) {
                 throw new VariableException(VariableException.ErrorType.ASSIGN_VALUE);
             }
             addVariableToMap(scope, type, variableName, isFinal, hasValue);
@@ -189,7 +199,8 @@ public class Variable {
         }
     }
 
-    private void addVariableToMap(VarProperties scope, String type, String variableName, Boolean isFinal, boolean hasValue) {
+    private void addVariableToMap(VarProperties scope, String type, String variableName, Boolean isFinal,
+                                  boolean hasValue) {
         HashMap<VarProperties, Boolean> properties = new HashMap<>();
         properties.put(VarProperties.IS_FINAL, isFinal);
         properties.put(VarProperties.IS_ASSIGNED, hasValue);
@@ -202,7 +213,8 @@ public class Variable {
      * @param val
      * @return
      */
-    private static boolean isValInList(ArrayList<HashMap<String, HashMap<VarProperties,Boolean>>> lst, String val) {
+    private static boolean isValInList(ArrayList<HashMap<String, HashMap<VarProperties,Boolean>>> lst,
+                                       String val) {
         for (HashMap<String, HashMap<VarProperties, Boolean>> map : lst) {
             if (map.containsKey(val)) {
                 return true; // The value exists in one of the maps
@@ -217,7 +229,8 @@ public class Variable {
      * @param var
      * @return
      */
-    private static boolean isVarAssigned(ArrayList<HashMap<String, HashMap<VarProperties,Boolean>>> lst, String var){
+    private static boolean isVarAssigned(ArrayList<HashMap<String, HashMap<VarProperties,Boolean>>> lst,
+                                         String var){
         for (HashMap<String, HashMap<VarProperties, Boolean>> map : lst) {
             if (map.containsKey(var)) {
                 return map.get(var).get(VarProperties.IS_ASSIGNED);// The value exists in one of the maps
@@ -234,7 +247,8 @@ public class Variable {
      * @param methodParameters
      * @return
      */
-    private  boolean isValUsed(Type valType, String valName, VarProperties scope, List<Map<String, String>> methodParameters) {
+    private  boolean isValUsed(Type valType, String valName, VarProperties scope, List<Map<String,
+            String>> methodParameters) {
         if(methodParameters!=null){
             for (Map<String,String> map : methodParameters){
                 if (map.containsKey(NAME)){
@@ -244,6 +258,10 @@ public class Variable {
                 }
             }
         }
+        return isValUsedInScope(valType, valName, scope);
+    }
+
+    private Boolean isValUsedInScope( Type valType, String valName, VarProperties scope){
         if (scope== VarProperties.GLOBAL){
             for (Type type : globalValMap.keySet()) {
                 if (valType!=type) {

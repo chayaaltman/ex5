@@ -106,7 +106,6 @@ public class Sjavac {
                 throw new ArgumentAmountException();
             }
         }
-
         catch (ArgumentAmountException e){
             System.out.println(IO_ERROR +": " +e.getMessage());
         }

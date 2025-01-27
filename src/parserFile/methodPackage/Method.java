@@ -1,7 +1,7 @@
 package parserFile.methodPackage;
 import parserFile.*;
-import parserFile.ifWhilePackage.IfWhile;
 import parserFile.varaibalePackage.Variable;
+import parserFile.varaibalePackage.VariableException;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,6 +34,9 @@ public class Method {
      * The regex for the return statement "return;"
      */
     private static final String RETURN_REGEX = "^\\s*return\\s*;\\s*$";
+    private static final String RETURN_REGEX_ERR = "^\\s*return\\s*.+;\\s*$";
+
+
     /**
      * The regex for the method call "methodName(a, b, c...);"
      */
@@ -41,8 +44,8 @@ public class Method {
             + Variable.allValueRegex + "|" + Variable.valNameRegex + ")(\\s*,\\s*("
             + Variable.allValueRegex + "|" + Variable.valNameRegex + "))*)?\\s*\\)\\s*;$";
 
-    private static final String CLOSE_LINE_REGEX= "^\\s*}\\s*$";
-    private static final String EMPTY_LINE_REGEX= "\\S*";
+    public static final String CLOSE_LINE_REGEX= "^\\s*}\\s*$";
+    public static final String EMPTY_LINE_REGEX= "\\S*";
     private static final String PARAM_SPLIT_SPACE= "\\s+";
     /**
      * The groups index
@@ -201,7 +204,7 @@ public class Method {
      * Get the name of the method
      * @return
      */
-    private String getMethodName(){
+    public String getMethodName(){
         return this.name;
     }
 
@@ -236,26 +239,24 @@ public class Method {
             } else if (line.matches(Parser.IF_WHILE_REGEX)) {
                 handleIfWhileStatement(i);
             // if the line is a return statement
-            } else if (isReturnStatement(line, i)) {
+            }
+            else if (isReturnStatement(line, i)) {
                 returnFlag = true;}
-            else if(line.startsWith(RETURN_BEGIN) && !line.matches(RETURN_REGEX)){
-                throw new MethodException(MethodException.ErrorType.RETURN_STATEMENT, line);
-            // if the line is a new method declaration- throw an exception
-            } else if (line.matches(Parser.METHOD_REGEX)) {
+            else if (line.matches(Parser.METHOD_REGEX)) {
                 throw new MethodException(MethodException.ErrorType.NEW_METHOD, line);
             // if the line is a method call
             } else if (line.matches(METHOD_CALL_REGEX)) {
                 throwFromMethodCall(line);
             }
-            // if the line is not empty and not a closing bracket, throw an exception
-            else if(!line.matches(CLOSE_LINE_REGEX)&&!line.matches(EMPTY_LINE_REGEX)){
-                throw new MethodException(MethodException.ErrorType.SYNTAX, line);
+            else if (line.matches(EMPTY_LINE_REGEX)) {
+                continue;
             }
         }
         // if there is not a return statement in the last line of the method, throw an exception
         if (!returnFlag) {
             throw new MethodException(MethodException.ErrorType.NO_RETURN_STATEMENT);
         }
+
     }
 
     /**
@@ -264,7 +265,10 @@ public class Method {
      * @return
      */
     public  boolean isVariableDeclaration(String line) {
-        return line.startsWith(PARAM_TYPE_REGEX) || line.startsWith(FINAL_REGEX);
+
+        Pattern pattern = Pattern.compile(Parser.VAR_DEC_REGEX);
+        Matcher matcher = pattern.matcher(line);
+        return  (matcher.find());
     }
 
     /**
@@ -287,8 +291,8 @@ public class Method {
      * @return
      */
     private boolean isReturnStatement(String line, int index) {
-        int LAST_LINE_OF_CODE = body.size() -2;
-        return line.matches(RETURN_REGEX) && index == body.size() - LAST_LINE_OF_CODE;
+        int LAST_LINE_OF_CODE = body.size() -1;
+        return line.matches(RETURN_REGEX) && (index+1 == LAST_LINE_OF_CODE);
     }
 
 
@@ -328,17 +332,26 @@ public class Method {
     private void handleVariables(String line) throws Exception {
         try {
             // Try checking the line as a local variable
-            this.variable.checkLine(line, VarProperties.LOCAL, allMethods.get(0).get(getMethodName()));
+            this.variable.checkLine(line, VarProperties.LOCAL, getMethodParamLst());
             // If it succeeds, exit the method and avoid checking the global context
         } catch (Exception localException) {
             // If the local check fails, attempt to check as a global variable
             try {
-                this.variable.checkLine(line, VarProperties.GLOBAL, allMethods.get(0).get(getMethodName()));
+                this.variable.checkLine(line, VarProperties.GLOBAL, getMethodParamLst());
             } catch (Exception globalException) {
                 // If both local and global checks fail, throw an exception
-                throw new Exception("Error in variable declaration: " + globalException.getMessage());
+                throw new VariableException(VariableException.ErrorType.VARIABLE_SYNTAX
+                        ,globalException.getMessage());
             }
         }
+    }
+    private List<Map<String, String>> getMethodParamLst(){
+        for (Map<String, List<Map<String, String>>> methodMap : allMethods) {
+            if(methodMap.containsKey(getMethodName())){
+                return methodMap.get(getMethodName());
+            }
+        }
+        return null;
     }
 
     /**
@@ -406,8 +419,9 @@ public class Method {
      * @return
      * @throws Exception
      */
-    private String[] extractParameters(String line) throws Exception {
-        String paramsPart = line.split("\\(")[1].split("\\)")[0].trim(); // Get content between parentheses
+    private String[] extractParameters(String line)  {
+        // Get content between parentheses
+        String paramsPart = line.split("\\(")[1].split("\\)")[0].trim();
         if (paramsPart.isEmpty()) {
             return new String[0]; // No parameters
         }
@@ -415,7 +429,8 @@ public class Method {
     }
 
     /**
-     * Validate the number of parameters: that the call has the same number of parameters as the method declaration
+     * Validate the number of parameters: that the call has the same number of parameters as the
+     * method declaration
      * @param methodName
      * @param originalParams
      * @param params
@@ -459,7 +474,7 @@ public class Method {
             // Base case: all parameters have been checked
             return;
         }
-        String type = originalParams.get(index).get("type");
+        String type = originalParams.get(index).get(TYPE);
         String param = params[index];
         // Check if the parameter matches the expected Type
         boolean isValid = isValidParameter(type, param);
@@ -504,7 +519,8 @@ public class Method {
         return switch (type) {
             case DOUBLE -> param.matches(Variable.doubleNumRegex) || param.matches(Variable.intNumRegex);
             case BOOLEAN ->
-                    param.matches(Variable.booleanRegex) || param.matches(Variable.intNumRegex) || param.matches(Variable.doubleNumRegex);
+                    param.matches(Variable.booleanRegex) || param.matches(Variable.intNumRegex) ||
+                            param.matches(Variable.doubleNumRegex);
             case INT -> param.matches(Variable.intNumRegex);
             case STRING -> param.matches(Variable.stringRegex);
             case CHAR -> param.matches(Variable.charRegex);
