@@ -21,7 +21,7 @@ public class Method {
     /**
      * The regex for the method declaration "void methodName(int a, double b, String c...) {"
      */
-    private static final String METHOD_REGEX = "^(\\w+)\\s+(\\w+)\\s*\\((.*)\\)\\s*\\{\\s*$";
+    private static final String METHOD_REGEX = "^\\s*(\\w+)\\s+(\\w+)\\s*\\((.*)\\)\\s*\\{\\s*$";
     /**
      * The regex for the return type "void"
      */
@@ -34,7 +34,6 @@ public class Method {
      * The regex for the return statement "return;"
      */
     private static final String RETURN_REGEX = "^\\s*return\\s*;\\s*$";
-    private static final String RETURN_REGEX_ERR = "^\\s*return\\s*.+;\\s*$";
 
 
     /**
@@ -62,7 +61,6 @@ public class Method {
     private static final String TYPE = "type";
     private static final String NAME = "name";
     private static final String PARAMS_SPLIT= ",";
-    private static final String RETURN_BEGIN = "return";
     private static final String FINAL_REGEX = "final";
     private final static String DOUBLE = "double";
     private final static String BOOLEAN = "boolean";

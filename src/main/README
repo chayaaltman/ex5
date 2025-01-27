@@ -1,3 +1,43 @@
 peleg.lampl, chayaaltman
 209668375, 209825074
 
+Regular expressions:
+1.Options for a variable declaration
+the regex -
+^(final +)?(int|String|double|char|boolean) +(([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_])*(?: *= *(\\S.
+*))?(?:, *([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*)(?: *= *(\\S.*))?)*) *; *$
+
+    Purpose:
+    This regex captures variable declarations in languages like Java, supporting single or multiple
+    declarations in a single statement, optional initializations, and optional use of the final modifier.
+
+    Breakdown:
+    ^(final +)?: Matches the optional final keyword with at least one trailing space.
+    (int|String|double|char|boolean): Captures the data type (primitive types or String).
+    +: Ensures at least one space between the data type and variable names.
+    (([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*): Captures variable names that follow
+    valid identifier rules.
+    (?: *= *(\\S.*))?: Optionally matches an assignment (=) and captures the value assigned to the variable.
+    (?:, *([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*): Supports additional variable declarations
+    separated by commas, with optional initialization.
+    (?: *= *(\\S.*))?)*): Matches and captures any further variable assignments.
+    *; *$: Ensures the statement ends with a semicolon, allowing optional spaces before or after.
+
+    This regex supports parsing single or multiple variables with optional initialization and flexibility
+    in formatting. For example:
+
+2. method declaration regex
+the regex-
+
+    Purpose:
+    This regex identifies method declarations, capturing the return type, method name, and parameters.
+
+    Breakdown:
+    ^\s*: Matches optional leading spaces at the start of the line.
+    (\w+): Captures the return type (alphanumeric or underscore).
+    \s+: Ensures at least one space between the return type and method name.
+    (\w+): Captures the method name.
+    \s*\((.*)\): Matches the parameter list inside parentheses, allowing spaces and any characters.
+    \s*\{\s*$: Matches an opening brace { at the end of the line, with optional spaces before or after.
+
+    This pattern ensures it accurately parses standard method declarations while allowing flexible formatting.
