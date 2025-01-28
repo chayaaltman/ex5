@@ -15,27 +15,27 @@ public class Variable {
     /**
      * Regular expressions for the variable types.
      */
-    public static final String VAL_NAME_REGEX = "[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*" ;
+    public static final String VAL_NAME_REGEX = "\\s*[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*\\s*" ;
     /**
      * Regular expressions for the variable values.
      */
-    public static final String INT_NUM_REGEX = "[+-]?[0-9]+";
+    public static final String INT_NUM_REGEX = "\\s*[+-]?[0-9]+";
     /**
      * Regular expressions for the variable values.
      */
-    public static final String DOUBLE_NUM_REGEX = "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
+    public static final String DOUBLE_NUM_REGEX = "\\s*[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
     /**
      * Regular expressions for the variable values.
      */
-    public static final String STRING_REGEX = "\"[^\\\\'\",]+\"";
+    public static final String STRING_REGEX = "\\s*\"[^\\\\'\",]+\"";
     /**
      * Regular expressions for the variable values.
      */
-    public static final String CHAR_REGEX = "'[^\\\\'\",]'";
+    public static final String CHAR_REGEX = "\\s*'[^\\\\'\",]'";
     /**
      * Regular expressions for the variable values.
      */
-    public static final String BOOLEAN_REGEX = "true|false|"+ INT_NUM_REGEX +"|"+ DOUBLE_NUM_REGEX;
+    public static final String BOOLEAN_REGEX = "\\s*true|false|"+ INT_NUM_REGEX +"|"+ DOUBLE_NUM_REGEX;
     /**
      * Regular expressions for the variable values.
      */
@@ -43,14 +43,15 @@ public class Variable {
     /**
      * Regular expressions for the variable values.
      */
-    public static final String VARIABLE_BODY_REGEX= VAL_NAME_REGEX +"(?: *= *(\\S.*))?(?:, *" +
-            "("+ VAL_NAME_REGEX +")(?: *= *(\\S.*))?)* *; *$";
+    //public static final String VARIABLE_BODY_REGEX= VAL_NAME_REGEX +"(?:\\s*=\\s*(\\S.*))?(?:, *" +
+         //   "("+ VAL_NAME_REGEX +")(?: *= *(\\S.*))?)* *; *$";
+    public static final String VARIABLE_BODY_REGEX= "^(\\s*([a-zA-Z_][a-zA-Z0-9_]*\\s*=\\s*\\S.*)(\\s*,\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*=\\s*\\S.*)*\\s*);\\s*$";
     /**
      * Regular expressions for the variable values.
      */
-    private static final String DECLARE_REGEX = "^(final +)?(int|String|double|char|boolean) +" +
+    private static final String DECLARE_REGEX = "^ *(final +)?(int|String|double|char|boolean) +" +
             "(([a-zA-Z][a-zA" +
-            "-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_])*(?: *= *(\\S.*))?(?:, *([a-zA-Z][a-zA-Z0-9_]*|" +
+            "-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_])\\s*(?: *=\\s*(\\S.*))?(?:, *([a-zA-Z][a-zA-Z0-9_]*|" +
             "_[a-zA-Z0-9][a-zA-Z0-9_]*)(?: *= *(\\S.*))?)*) *; *$";
     /**
     * Group numbers in the regex
@@ -61,7 +62,7 @@ public class Variable {
     /**
      * Some finals for the split function
      */
-    private final static String SPLIT_REGEX = "\\s+";
+    private final static String SPLIT_REGEX = "\\s*=\\s*";
     private final static String ASSIGNMENT_REGEX = "=";
     private final static int ASSIGNMENT_INDEX = 1;
     private final static int BODY_INDEX = 2;
@@ -143,8 +144,10 @@ public class Variable {
             throws Exception {
         boolean is_final;
         String type,body;
-        Pattern pattern = Pattern.compile(DECLARE_REGEX); // compile the pattern
+        Pattern pattern = Pattern.compile(DECLARE_REGEX);// compile the pattern
+        Pattern assignmentPattern = Pattern.compile(VARIABLE_BODY_REGEX);
         Matcher matcher = pattern.matcher(line);
+        Matcher assignmentMatcher = assignmentPattern.matcher(line);
         //checks if the line is valid syntax
         if (matcher.matches()){
             is_final= matcher.group(IS_FINAL_GROUP_NUM) != null; // check if the variable is final
@@ -152,15 +155,36 @@ public class Variable {
             body = matcher.group(VARS_GROUP_NUM); // get the body
             checkBody(type,body,scope,is_final, methodParameters); // check the body
         }
+        else if (assignmentMatcher.matches()){
+            checkAssignment(scope, assignmentMatcher.group(1), methodParameters);
+        }
         else{
             // if the line is not valid syntax
             throw new VariableException(VariableException.ErrorType.VARIABLE_SYNTAX, line);
         }
     }
 
+    private void checkAssignment(VarProperties scope, String line, List<Map<String, String>> methodParameters ) throws VariableException {
+        String[] pairs = line.split("\\s*,\\s*");
+        for (String pair : pairs) {
+            String[] array = pair.split("\\s*=\\s*");
+            String variableName = array[0];
+            if (!isVariableExistsNotFinal(scope, variableName)){
+                throw new VariableException(VariableException.ErrorType.VARIABLE_NAME);
+            }
+            String type = getType(scope, variableName);
+            assert type != null;
+            processVariableAssignment(type.toLowerCase(),array,scope,false,methodParameters, variableName);
+
+        }
+
+    }
+
+
+
     /**
      * Checks the body of the variable declaration.
-     * @param type
+     * @param type gives type of string
      * @param body
      * @param scope
      * @param isFinal
@@ -169,17 +193,21 @@ public class Variable {
      */
     private void checkBody(String type, String body, VarProperties scope, Boolean isFinal, List<Map<String,
             String>> methodParameters) throws Exception {
-        String[] array = body.split(SPLIT_REGEX);
-        String variableName = array[0];
-        validateVariableName(variableName);
-        checkVariableUsage(type, variableName, scope, methodParameters);
+        // Split the input by commas
+        String[] pairs = body.split("\\s*,\\s*");
+        for (String pair : pairs) {
+            String[] array = pair.split("\\s*=\\s*");
+            String variableName = array[0];
+            validateVariableName(variableName);
+            checkVariableUsage(type, variableName, scope, methodParameters);
+            if (array.length > 1 ) {
+                processVariableAssignment(type, array, scope, isFinal, methodParameters, variableName);
+            }
+            else if (isFinal) {
+                throw new VariableException(VariableException.ErrorType.FINAL_VARIABLE);
+            }
+        }
 
-        if (array.length > ASSIGNMENT_INDEX && array[1].equals(ASSIGNMENT_REGEX)) {
-            processVariableAssignment(type, array, scope, isFinal, methodParameters, variableName);
-        }
-        else if (isFinal) {
-            throw new VariableException(VariableException.ErrorType.FINAL_VARIABLE);
-        }
     }
 
     /**
@@ -225,18 +253,11 @@ public class Variable {
             throws VariableException {
         String value = null;
         boolean hasValue = false;
-        for (int i = BODY_INDEX; i < array.length; i++) { // iterate over the array
+        for (int i = BODY_INDEX-1; i < array.length; i++) { // iterate over the array
             value = array[i];
             hasValue = true;
-            validateValue(type, value);
+            validateValue(type, value,scope);
             checkVariableUsage(type, variableName, scope, methodParameters); // check if the variable is used
-            assert value != null;
-            // check if the value is a variable
-            if (value.matches(VAL_NAME_REGEX) && !isVarAssignedToType(scope, value,
-                    Type.valueOf(type.toUpperCase()))) {
-                throw new VariableException(VariableException.ErrorType.ASSIGN_VALUE);
-            }
-            // check if the value is a variable and is assigned to the correct type
             addVariableToMap(scope, type, variableName, isFinal, hasValue);
         }
     }
@@ -247,17 +268,28 @@ public class Variable {
      * @param value
      * @throws VariableException
      */
-    private void validateValue(String type, String value) throws VariableException {
+    private void validateValue(String type, String value, VarProperties scope) throws VariableException {
         boolean isValidValue = switch (type) {
-            case INT -> value == null || value.matches(INT_NUM_REGEX) || value.matches(VAL_NAME_REGEX);
-            case DOUBLE -> value == null || value.matches(DOUBLE_NUM_REGEX) || value.matches(VAL_NAME_REGEX);
-            case STRING -> value == null || value.matches(STRING_REGEX) || value.matches(VAL_NAME_REGEX);
-            case  CHAR -> value == null || value.matches(CHAR_REGEX) || value.matches(VAL_NAME_REGEX);
-            case BOOLEAN -> value == null || value.matches(BOOLEAN_REGEX) || value.matches(VAL_NAME_REGEX);
+            case INT -> value == null || value.matches(INT_NUM_REGEX) ;
+            case DOUBLE -> value == null || value.matches(DOUBLE_NUM_REGEX) ;
+            case STRING -> value == null || value.matches(STRING_REGEX) ;
+            case  CHAR -> value == null || value.matches(CHAR_REGEX);
+            case BOOLEAN -> value == null || value.matches(BOOLEAN_REGEX) ;
             default -> false;
         };
+        assert value != null;
+        if (value.matches(VAL_NAME_REGEX)){
+            if (!isVarAssignedToType(scope, value,
+                    Type.valueOf(type.toUpperCase()))) {
+                throw new VariableException(VariableException.ErrorType.ASSIGN_VALUE);
+            }
+            else{
+                isValidValue = true;
+            }
+        }
         // if the value is not valid throw an exception
         if (!isValidValue) {
+
             throw new VariableException(VariableException.ErrorType.ASSIGN_VALUE);
         }
     }
@@ -405,6 +437,51 @@ public class Variable {
             return true;
         return isVarAssignedToType(scope, var, Type.BOOLEAN);
 
+    }
+    private boolean isVariableExistsNotFinal(VarProperties scope, String var) {
+        if (scope== VarProperties.GLOBAL){
+            for (Type type : globalValMap.keySet()) {
+                    if (isValInList(globalValMap.get(type), var)){
+                        return isVarNotFinal(globalValMap.get(type), var);
+                }
+            }
+        }
+        else if (scope== VarProperties.LOCAL){
+            for (Type type : localValMap.keySet()) {
+                    if (isValInList(localValMap.get(type), var)) {
+                        return isVarNotFinal(localValMap.get(type), var);
+                    }
+                }
+            }
+        return false;
+    }
+
+    private String getType(VarProperties scope, String var){
+        if (scope== VarProperties.GLOBAL){
+            for (Type type : globalValMap.keySet()) {
+                if (isValInList(globalValMap.get(type), var)){
+                    return type.toString();
+                }
+            }
+        }
+        else if (scope== VarProperties.LOCAL){
+            for (Type type : localValMap.keySet()) {
+                if (isValInList(localValMap.get(type), var)) {
+                    return type.toString();
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean isVarNotFinal(ArrayList<HashMap<String, HashMap<VarProperties, Boolean>>>
+                                       typeList, String var) {
+        for (HashMap<String, HashMap<VarProperties, Boolean>> map : typeList){
+            if (map.containsKey(var)) {
+                return !map.get(var).get(VarProperties.IS_FINAL);
+            }
+        }
+        return false;
     }
 
 }

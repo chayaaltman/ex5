@@ -19,8 +19,9 @@ void boo(int a, int b, String s) {
 	return;
 }
 
-
 void soo(boolean b) {
+		boo(a,b,"hello");
+
 	return;
 }
 

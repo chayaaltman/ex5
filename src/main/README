@@ -4,7 +4,7 @@ peleg.lampl, chayaaltman
 Regular expressions:
 1.Options for a variable declaration
 the regex -
-^(final +)?(int|String|double|char|boolean) +(([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_])*(?: *= *(\\S.
+^ *(final +)?(int|String|double|char|boolean) +(([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_])*(?: *= *(\\S.
 *))?(?:, *([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*)(?: *= *(\\S.*))?)*) *; *$
 
     Purpose:
@@ -12,7 +12,7 @@ the regex -
     declarations in a single statement, optional initializations, and optional use of the final modifier.
 
     Breakdown:
-    ^(final +)?: Matches the optional final keyword with at least one trailing space.
+    ^ *(final +)?: Matches the optional final keyword with at least one trailing space.
     (int|String|double|char|boolean): Captures the data type (primitive types or String).
     +: Ensures at least one space between the data type and variable names.
     (([a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*): Captures variable names that follow

@@ -25,6 +25,7 @@ public class Parser {
      * Regular expressions for variable declarations, if/while statements, and method declarations.
      */
     public static final String VAR_DEC_REGEX ="^\\s*(final +)?(int|String|double|char|boolean)\\b" ;
+
     /**
      * Regular expression for if/while statements.
      */
@@ -119,8 +120,10 @@ public class Parser {
         }
         // check if the line is a variable declaration
         Pattern pattern = Pattern.compile(VAR_DEC_REGEX);
+        Pattern assign_pat = Pattern.compile(VARIABLE_BODY_REGEX);
         Matcher matcher = pattern.matcher(line);
-        if (matcher.find() ) {
+        Matcher assign_matcher = assign_pat.matcher(line);
+        if (matcher.find()||assign_matcher.find() ) {
             Variable variable = new Variable();
             try {
                 variable.checkLine(line, VarProperties.GLOBAL, null);
