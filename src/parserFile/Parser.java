@@ -3,7 +3,6 @@ import parserFile.methodPackage.Method;
 import parserFile.varaibalePackage.Variable;
 
 import java.io.*;
-import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

@@ -1,7 +1,5 @@
 package parserFile;
 
-import parserFile.varaibalePackage.VariableException;
-
 /**
  * Exception class for the parser.
  */
