@@ -21,7 +21,7 @@ public class Method {
     /**
      * The regex for the method declaration "void methodName(int a, double b, String c...) {"
      */
-    private static final String METHOD_REGEX = "^(\\w+)\\s+(\\w+)\\s*\\((.*)\\)\\s*\\{\\s*$";
+    private static final String METHOD_DEC_REGEX = "^(\\w+)\\s+(\\w+)\\s*\\((.*)\\)\\s*\\{\\s*$";
     /**
      * The regex for the return type "void"
      */
@@ -34,19 +34,25 @@ public class Method {
      * The regex for the return statement "return;"
      */
     private static final String RETURN_REGEX = "^\\s*return\\s*;\\s*$";
-    private static final String RETURN_REGEX_ERR = "^\\s*return\\s*.+;\\s*$";
-
 
     /**
      * The regex for the method call "methodName(a, b, c...);"
      */
     public static final String METHOD_CALL_REGEX = "^\\s*(" + METHOD_NAME_REGEX + ")\\s*\\(\\s*(("
-            + Variable.allValueRegex + "|" + Variable.valNameRegex + ")(\\s*,\\s*("
-            + Variable.allValueRegex + "|" + Variable.valNameRegex + "))*)?\\s*\\)\\s*;$";
-
+            + Variable.ALL_VALUE_REGEX + "|" + Variable.VAL_NAME_REGEX + ")(\\s*,\\s*("
+            + Variable.ALL_VALUE_REGEX + "|" + Variable.VAL_NAME_REGEX + "))*)?\\s*\\)\\s*;$";
+    /**
+     * The regex for the open line
+     */
     public static final String CLOSE_LINE_REGEX= "^\\s*}\\s*$";
+    /**
+     * The regex for an empty line
+     */
     public static final String EMPTY_LINE_REGEX= "\\S*";
-    private static final String PARAM_SPLIT_SPACE= "\\s+";
+    /**
+     * The regex for the parameter split
+     */
+    private static final String PARAM_SPLIT_SPACE= "\\s+"; // split by space
     /**
      * The groups index
      */
@@ -122,7 +128,7 @@ public class Method {
      * @return
      */
     private Matcher getMatcher(String line) {
-        Pattern pattern = Pattern.compile(METHOD_REGEX);
+        Pattern pattern = Pattern.compile(METHOD_DEC_REGEX);
         return pattern.matcher(line);
     }
 
@@ -264,8 +270,7 @@ public class Method {
      * @param line
      * @return
      */
-    public  boolean isVariableDeclaration(String line) {
-
+    public boolean isVariableDeclaration(String line) {
         Pattern pattern = Pattern.compile(Parser.VAR_DEC_REGEX);
         Matcher matcher = pattern.matcher(line);
         return  (matcher.find());
@@ -278,7 +283,7 @@ public class Method {
      */
     private void handleIfWhileStatement(int i) throws Exception {
         try {
-            handleIfWhile(i);
+            handleIfWhile(i); // Handle the if/while statement
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         }
@@ -291,6 +296,7 @@ public class Method {
      * @return
      */
     private boolean isReturnStatement(String line, int index) {
+        // Check if the line is a return statement in the last line of the method
         int LAST_LINE_OF_CODE = body.size() -1;
         return line.matches(RETURN_REGEX) && (index+1 == LAST_LINE_OF_CODE);
     }
@@ -316,6 +322,7 @@ public class Method {
      * @throws Exception
      */
     private List<Map<String, String>> getMethodParameters(String methodName) throws Exception {
+        // Iterate over the list of methods and check if the method exists in the map
         for (Map<String, List<Map<String, String>>> methodMap : allMethods) {
             if (methodMap.containsKey(methodName)) {
                 return methodMap.get(methodName);
@@ -345,6 +352,11 @@ public class Method {
             }
         }
     }
+
+    /**
+     * Get the parameters of the method
+     * @return
+     */
     private List<Map<String, String>> getMethodParamLst(){
         for (Map<String, List<Map<String, String>>> methodMap : allMethods) {
             if(methodMap.containsKey(getMethodName())){
@@ -517,13 +529,13 @@ public class Method {
         }
         // Check if the parameter matches the expected Type
         return switch (type) {
-            case DOUBLE -> param.matches(Variable.doubleNumRegex) || param.matches(Variable.intNumRegex);
+            case DOUBLE -> param.matches(Variable.DOUBLE_NUM_REGEX) || param.matches(Variable.INT_NUM_REGEX);
             case BOOLEAN ->
-                    param.matches(Variable.booleanRegex) || param.matches(Variable.intNumRegex) ||
-                            param.matches(Variable.doubleNumRegex);
-            case INT -> param.matches(Variable.intNumRegex);
-            case STRING -> param.matches(Variable.stringRegex);
-            case CHAR -> param.matches(Variable.charRegex);
+                    param.matches(Variable.BOOLEAN_REGEX) || param.matches(Variable.INT_NUM_REGEX) ||
+                            param.matches(Variable.DOUBLE_NUM_REGEX);
+            case INT -> param.matches(Variable.INT_NUM_REGEX);
+            case STRING -> param.matches(Variable.STRING_REGEX);
+            case CHAR -> param.matches(Variable.CHAR_REGEX);
             default -> false;
         };
     }

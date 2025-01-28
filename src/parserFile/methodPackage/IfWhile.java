@@ -29,8 +29,8 @@ public class IfWhile {
      * Regex to match multiple conditions separated by || or &&
      */
     private static final String SEPARATE_REGEX="\\s*\\|\\||&&\\s*";
-    private static final String MULTIPLE_CONDITION_REGEX = "^ *(true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0" +
-            "-9]*)(\\s*(\\|\\||&&)\\s*(true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0-9]*))*\\s*$";
+    private static final String MULTIPLE_CONDITION_REGEX = "^ *(true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0"
+            + "-9]*)(\\s*(\\|\\||&&)\\s*(true|false|\\d+(\\.\\d+)?|[a-zA-Z_][a-zA-Z_0-9]*))*\\s*$";
     /**
      * Group index for the condition inside the parentheses
      */
@@ -132,7 +132,7 @@ public class IfWhile {
             throw new MethodException(MethodException.ErrorType.SYNTAX, line);
         // Check if the line is an if/while statement
         } else if (line.matches(Parser.IF_WHILE_REGEX)) {
-            handleIfWhileStatement(line, index);
+            handleIfWhileStatement(index);
         // Check if the line is a method declaration
         } else if (line.matches(Parser.METHOD_REGEX)) {
             throw new MethodException(MethodException.ErrorType.NEW_METHOD);
@@ -159,7 +159,12 @@ public class IfWhile {
         }
     }
 
-    private void handleIfWhileStatement(String line, int index) throws Exception {
+    /**
+     * Handles the if/while statement inside the if/while statement
+     * @param index
+     * @throws Exception
+     */
+    private void handleIfWhileStatement(int index) throws Exception {
         List<String> body = Parser.getIfWhileScope(index, this.body);
         IfWhile ifWhile = new IfWhile(body, new Variable(), variableScopeList);
         try {
@@ -169,6 +174,11 @@ public class IfWhile {
         }
     }
 
+    /**
+     * Checks if the variable is defined in any scope (local or global)
+     * @param line
+     * @throws Exception
+     */
     private void isVariableDefinedInAnyScope (String line) throws Exception {
             boolean foundInScope = false;
             // Check the local scopes from innermost to outermost
@@ -196,8 +206,12 @@ public class IfWhile {
             }
         }
 
+    /**
+     * Parses the condition inside the if/while statement
+      * @param condition
+     * @throws ifWhileException
+     */
     private void parserCondition(String condition) throws ifWhileException {
-        // Trim whitespace around the condition
         if (condition.isEmpty()) {
             throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION);
         }
@@ -206,23 +220,30 @@ public class IfWhile {
             throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION, condition);
         }
         try {
-            parserSimpleCondition(condition);
+            parserSimpleCondition(condition); // Check if the condition is a simple condition
         }
         catch(ifWhileException e){
             throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION, condition);
             }
         try {
-            parserComplexCondition(condition);
+            parserComplexCondition(condition); // Check if the condition is a complex condition
         }
+        // If the condition is not a simple or complex condition, throw an exception
         catch(ifWhileException e){
             throw new ifWhileException(ifWhileException.ErrorType.INVALID_CONDITION, condition);
         }
     }
 
+    /**
+     * Parses a simple condition (single variable, constant, or boolean)
+     * @param condition
+     * @throws ifWhileException
+     */
     private void parserSimpleCondition(String condition) throws ifWhileException {
-        Pattern pattern1 = Pattern.compile(SIMPLE_COND_REGEX);
-        Matcher matcher1 = pattern1.matcher(condition);
-        if (matcher1.matches()) {
+        // Check if the condition is a boolean or a constant
+        Pattern pattern = Pattern.compile(SIMPLE_COND_REGEX);
+        Matcher matcher = pattern.matcher(condition);
+        if (matcher.matches()) {
             boolean isValid = condition.matches(BOOL_REGEX);
             if (!isValidValue(condition)) {
                 isValid = true;
@@ -233,11 +254,16 @@ public class IfWhile {
         }
     }
 
+    /**
+     * Parses a complex condition (multiple variables, constants, or booleans)
+     * @param condition
+     * @throws ifWhileException
+     */
     private void parserComplexCondition(String condition) throws ifWhileException {
-        Pattern pattern2 = Pattern.compile(MULTIPLE_CONDITION_REGEX);
-        Matcher matcher2 = pattern2.matcher(condition);
+        Pattern pattern = Pattern.compile(MULTIPLE_CONDITION_REGEX);
+        Matcher matcher = pattern.matcher(condition);
 
-        if (matcher2.matches()) {
+        if (matcher.matches()) {
             // Extract the matched value (variable, constant, or boolean)
             String[] values = condition.split(SEPARATE_REGEX);
             // Validate the value (example: check if variables are declared/initialized)
@@ -249,12 +275,13 @@ public class IfWhile {
         }
     }
 
-    // check if the variable inside the condition is valid: it might be one of the 3:
-    // 1. a variable declared in the method
-    // 2. a variable declared in the global scope
-    // 3. a constant
+    /**
+     * Checks if the value is valid (variable, constant, or boolean)
+     * @param value
+     * @return
+     */
     private boolean isValidValue(String value) {
-        // CHECK IF THERE IS A VARIABLE IN THE LOCAL OR GLOBAL LIST
+        // check if the value is a variable inside the scope
         for (int i = variableScopeList.size() - 1; i >= 0; i--){
             if (variableScopeList.get(i).isValidVariableInCondition(value, VarProperties.LOCAL)){
                 return true;
@@ -266,11 +293,15 @@ public class IfWhile {
         else return isConstant(value);
     }
 
+    /**
+     * Checks if the value is a constant (int, double, or boolean)
+     * @param value
+     * @return
+     */
     private boolean isConstant(String value) {
-        // Add logic to check if the value is a constant
-        // For example, check if the value is an integer, double, or boolean
-        return value.matches(Variable.intNumRegex) || value.matches(Variable.doubleNumRegex) ||
-                value.matches(Variable.booleanRegex);
+        // check if the value is an integer, double, or boolean
+        return value.matches(Variable.INT_NUM_REGEX) || value.matches(Variable.DOUBLE_NUM_REGEX) ||
+                value.matches(Variable.BOOLEAN_REGEX);
     }
 
 }

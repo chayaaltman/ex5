@@ -7,8 +7,6 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-
 import static parserFile.varaibalePackage.Variable.VARIABLE_BODY_REGEX;
 
 /**
@@ -16,18 +14,38 @@ import static parserFile.varaibalePackage.Variable.VARIABLE_BODY_REGEX;
  */
 public class Parser {
     /**
-     * Regular expressions for the different types of lines
+     * Regular expressions for comments and illegal comments.
      */
     private static final String COMMENT_REGEX = "^//.*$";
+    /**
+     * Regular expression for illegal comments.
+     */
     private static final String ILLEGAL_COMMENT_REGEX =  "^(/\\*.*)|(.*\\*/)$";
+    /**
+     * Regular expressions for variable declarations, if/while statements, and method declarations.
+     */
     public static final String VAR_DEC_REGEX ="^\\s*(final +)?(int|String|double|char|boolean)\\b" ;
+    /**
+     * Regular expression for if/while statements.
+     */
     public static final String IF_WHILE_REGEX = "^\\s*(if|while) *\\(( *.*)\\) *\\{ *$";
+    /**
+     * Regular expression for method declarations.
+     */
     public static final String METHOD_REGEX = "^\\s*void";
+    /**
+     * Regular expression for return statements.
+     */
     private static final String RETURN_REGEX = "^return";
+    /**
+     * Error message for reading a file.
+     */
     private static final String READ_FILE_ERR_MSG="An error occurred while reading the file: ";
+    /**
+     * Constants for brackets.
+     */
     public static final String OPEN_BRACKET="{";
-    public static final String CLOSE_BRACKET="}";
-
+    public static final String CLOSE_BRACKET="}"; // Regular expression for the end of a scope
     private static final List<String> lines = new ArrayList<>(); // Stores lines read from the file
     private final Map<String, List<String>> methodScopes = new HashMap<>();
     /**
@@ -62,10 +80,11 @@ public class Parser {
     public void parseFile() throws Exception {
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
-            ///  handle comments
             if (line.isEmpty()) {
                 continue;
-            } else if (line.matches(COMMENT_REGEX)) {
+            }
+            //  handle comments
+            else if (line.matches(COMMENT_REGEX)) {
                 continue;
             }
             // a method call
@@ -85,15 +104,20 @@ public class Parser {
             else {
                 handleLine(line);
             }
-
         }
         handleMethod();
     }
 
+    /**
+     * Handles a line of code and checks for syntax errors.
+     * @param line
+     * @throws Exception
+     */
     private void handleLine(String line) throws Exception {
-        if (line.matches(ILLEGAL_COMMENT_REGEX)) {
+        if (line.matches(ILLEGAL_COMMENT_REGEX)) { // Check if the comment is illegal
             throw new parseException(parseException.ErrorType.COMMENT_TYPE);
         }
+        // check if the line is a variable declaration
         Pattern pattern = Pattern.compile(VAR_DEC_REGEX);
         Matcher matcher = pattern.matcher(line);
         if (matcher.find() ) {
@@ -121,8 +145,13 @@ public class Parser {
         }
     }
 
+    /**
+     * Handles the methods in the file.
+     * @throws Exception
+     */
     private void handleMethod() throws Exception {
         for (String methodName : methodScopes.keySet()){
+            // handle the method
             Method method = new Method(methodScopes.get(methodName));
             try {
                 method.handleMethod(methodName);
@@ -133,21 +162,28 @@ public class Parser {
         }
     }
 
+    /**
+     * Returns the scope of the if/while statement. the logic is to count the number of brackets,
+     * and when the count is 0, the scope ends.
+     * @param index
+     * @param body
+     * @return
+     */
     private static List<String> getScope(int index, List<String> body) {
         List<String> scope = new ArrayList<>();
-        int braceCount = 0;
+        int braceCount = 0; // count the number of brackets
         boolean insideIfWhile = false;
-        for (int i=index; i<body.size(); i++) {
-            if (body.get(i).contains(OPEN_BRACKET)) {
+        for (int i=index; i<body.size(); i++) { // iterate over the body
+            if (body.get(i).contains(OPEN_BRACKET)) { // if there is an open bracket, increase the count
                 braceCount++;
-                insideIfWhile = true;
+                insideIfWhile = true; // we are inside the if/while scope
             }
             if (insideIfWhile) {
                 scope.add(body.get(i));
             }
-            if (body.get(i).contains(CLOSE_BRACKET)) {
+            if (body.get(i).contains(CLOSE_BRACKET)) { // if there is a close bracket, decrease the count
                 braceCount--;
-                if (braceCount == 0) {
+                if (braceCount == 0) { // if the count is 0, the scope ends
                     insideIfWhile = false;
                     break;
                 }
@@ -157,10 +193,21 @@ public class Parser {
     }
 
 
+    /**
+     * Returns the method scope from index to the end of the method.
+     * @param index
+     * @return
+     */
     private List<String> getMethodScope(int index) {
         return getScope(index, lines);
     }
 
+    /**
+     * Returns the scope of the if/while statement. from index to the end of the scope.
+     * @param index
+     * @param body
+     * @return
+     */
     public static List<String> getIfWhileScope(int index , List<String> body) {
         return getScope(index,body);
     }

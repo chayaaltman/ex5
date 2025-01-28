@@ -7,11 +7,11 @@ import java.io.IOException;
  * the file is not in the expected "sjava" format.
  */
 public class FileFormatException extends IOException {
+    private static final String MESSAGE_EXCEPTION = "wrong file format (not sjava)";
     /**
      * Default constructor for the FileFormatException.
      * Initializes the exception with a predefined error message: "wrong file format (not sjava)".
      */
-    private static final String MESSAGE_EXCEPTION = "wrong file format (not sjava)";
     public FileFormatException() {
         super(MESSAGE_EXCEPTION);
 

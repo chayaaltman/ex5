@@ -7,17 +7,47 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class for the variables in the program.
+ */
 public class Variable {
 
-    public static final String valNameRegex= "[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*" ;
-    public static final String intNumRegex= "[+-]?[0-9]+";
-    public static final String doubleNumRegex= "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
-    public static final String stringRegex= "\"[^\\\\'\",]+\"";
-    public static final String charRegex= "'[^\\\\'\",]'";
-    public static final String booleanRegex= "true|false|"+intNumRegex+"|"+doubleNumRegex;
-    public static final String allValueRegex= booleanRegex+"|"+stringRegex+"|"+charRegex;
-    public static final String VARIABLE_BODY_REGEX= valNameRegex+"(?: *= *(\\S.*))?(?:, *" +
-            "("+valNameRegex+")(?: *= *(\\S.*))?)* *; *$";
+    /**
+     * Regular expressions for the variable types.
+     */
+    public static final String VAL_NAME_REGEX = "[a-zA-Z][a-zA-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_]*" ;
+    /**
+     * Regular expressions for the variable values.
+     */
+    public static final String INT_NUM_REGEX = "[+-]?[0-9]+";
+    /**
+     * Regular expressions for the variable values.
+     */
+    public static final String DOUBLE_NUM_REGEX = "[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)";
+    /**
+     * Regular expressions for the variable values.
+     */
+    public static final String STRING_REGEX = "\"[^\\\\'\",]+\"";
+    /**
+     * Regular expressions for the variable values.
+     */
+    public static final String CHAR_REGEX = "'[^\\\\'\",]'";
+    /**
+     * Regular expressions for the variable values.
+     */
+    public static final String BOOLEAN_REGEX = "true|false|"+ INT_NUM_REGEX +"|"+ DOUBLE_NUM_REGEX;
+    /**
+     * Regular expressions for the variable values.
+     */
+    public static final String ALL_VALUE_REGEX = BOOLEAN_REGEX +"|"+ STRING_REGEX +"|"+ CHAR_REGEX;
+    /**
+     * Regular expressions for the variable values.
+     */
+    public static final String VARIABLE_BODY_REGEX= VAL_NAME_REGEX +"(?: *= *(\\S.*))?(?:, *" +
+            "("+ VAL_NAME_REGEX +")(?: *= *(\\S.*))?)* *; *$";
+    /**
+     * Regular expressions for the variable values.
+     */
     private static final String DECLARE_REGEX = "^(final +)?(int|String|double|char|boolean) +" +
             "(([a-zA-Z][a-zA" +
             "-Z0-9_]*|_[a-zA-Z0-9][a-zA-Z0-9_])*(?: *= *(\\S.*))?(?:, *([a-zA-Z][a-zA-Z0-9_]*|" +
@@ -137,7 +167,8 @@ public class Variable {
      * @param methodParameters
      * @throws Exception
      */
-    private void checkBody(String type, String body, VarProperties scope, Boolean isFinal, List<Map<String, String>> methodParameters) throws Exception {
+    private void checkBody(String type, String body, VarProperties scope, Boolean isFinal, List<Map<String,
+            String>> methodParameters) throws Exception {
         String[] array = body.split(SPLIT_REGEX);
         String variableName = array[0];
         validateVariableName(variableName);
@@ -151,14 +182,27 @@ public class Variable {
         }
     }
 
+    /**
+     * Validates the variable name.
+     * @param variableName
+     * @throws VariableException
+     */
     private void validateVariableName(String variableName) throws VariableException {
         try {
-            variableName.matches(valNameRegex);
+            variableName.matches(VAL_NAME_REGEX);
         } catch (Exception e) {
             throw new VariableException(VariableException.ErrorType.VARIABLE_NAME);
         }
     }
 
+    /**
+     * Checks if the variable is used in the code.
+     * @param type
+     * @param variableName
+     * @param scope
+     * @param methodParameters
+     * @throws VariableException
+     */
     private void checkVariableUsage(String type, String variableName, VarProperties scope, List<Map<String,
             String>> methodParameters) throws VariableException {
         if (isValUsed(Type.valueOf(type.toUpperCase()), variableName, scope, methodParameters)) {
@@ -166,42 +210,70 @@ public class Variable {
         }
     }
 
+    /**
+     * Processes the variable assignment.
+     * @param type
+     * @param array
+     * @param scope
+     * @param isFinal
+     * @param methodParameters
+     * @param variableName
+     * @throws VariableException
+     */
     private void processVariableAssignment(String type, String[] array, VarProperties scope, Boolean isFinal,
                                            List<Map<String, String>> methodParameters, String variableName )
             throws VariableException {
         String value = null;
         boolean hasValue = false;
-        for (int i = BODY_INDEX; i < array.length; i++) {
+        for (int i = BODY_INDEX; i < array.length; i++) { // iterate over the array
             value = array[i];
             hasValue = true;
             validateValue(type, value);
-            checkVariableUsage(type, variableName, scope, methodParameters);
+            checkVariableUsage(type, variableName, scope, methodParameters); // check if the variable is used
             assert value != null;
-            if (value.matches(valNameRegex) && !isVarAssignedToType(scope, value,
+            // check if the value is a variable
+            if (value.matches(VAL_NAME_REGEX) && !isVarAssignedToType(scope, value,
                     Type.valueOf(type.toUpperCase()))) {
                 throw new VariableException(VariableException.ErrorType.ASSIGN_VALUE);
             }
+            // check if the value is a variable and is assigned to the correct type
             addVariableToMap(scope, type, variableName, isFinal, hasValue);
         }
     }
 
+    /**
+     * Validates the value of the variable using case switch.
+     * @param type
+     * @param value
+     * @throws VariableException
+     */
     private void validateValue(String type, String value) throws VariableException {
         boolean isValidValue = switch (type) {
-            case INT -> value == null || value.matches(intNumRegex) || value.matches(valNameRegex);
-            case DOUBLE -> value == null || value.matches(doubleNumRegex) || value.matches(valNameRegex);
-            case STRING -> value == null || value.matches(stringRegex) || value.matches(valNameRegex);
-            case  CHAR -> value == null || value.matches(charRegex) || value.matches(valNameRegex);
-            case BOOLEAN -> value == null || value.matches(booleanRegex) || value.matches(valNameRegex);
+            case INT -> value == null || value.matches(INT_NUM_REGEX) || value.matches(VAL_NAME_REGEX);
+            case DOUBLE -> value == null || value.matches(DOUBLE_NUM_REGEX) || value.matches(VAL_NAME_REGEX);
+            case STRING -> value == null || value.matches(STRING_REGEX) || value.matches(VAL_NAME_REGEX);
+            case  CHAR -> value == null || value.matches(CHAR_REGEX) || value.matches(VAL_NAME_REGEX);
+            case BOOLEAN -> value == null || value.matches(BOOLEAN_REGEX) || value.matches(VAL_NAME_REGEX);
             default -> false;
         };
+        // if the value is not valid throw an exception
         if (!isValidValue) {
             throw new VariableException(VariableException.ErrorType.ASSIGN_VALUE);
         }
     }
 
+    /**
+     * Adds a variable to the map.
+     * @param scope
+     * @param type
+     * @param variableName
+     * @param isFinal
+     * @param hasValue
+     */
     private void addVariableToMap(VarProperties scope, String type, String variableName, Boolean isFinal,
                                   boolean hasValue) {
         HashMap<VarProperties, Boolean> properties = new HashMap<>();
+        // add the properties to the map
         properties.put(VarProperties.IS_FINAL, isFinal);
         properties.put(VarProperties.IS_ASSIGNED, hasValue);
         addToMap(scope, Type.valueOf(type.toUpperCase()), variableName, properties);
@@ -261,7 +333,14 @@ public class Variable {
         return isValUsedInScope(valType, valName, scope);
     }
 
-    private Boolean isValUsedInScope( Type valType, String valName, VarProperties scope){
+    /**
+     * Checks if the value is used in the scope.
+     * @param valType
+     * @param valName
+     * @param scope
+     * @return
+     */
+    private Boolean isValUsedInScope(Type valType, String valName, VarProperties scope){
         if (scope== VarProperties.GLOBAL){
             for (Type type : globalValMap.keySet()) {
                 if (valType!=type) {
@@ -327,4 +406,5 @@ public class Variable {
         return isVarAssignedToType(scope, var, Type.BOOLEAN);
 
     }
+
 }

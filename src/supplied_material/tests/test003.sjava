@@ -1,1 +1,9 @@
-final int a = -5;
+//final int a = -5;
+void foo(int a) {
+    return;
+}
+void soo(int a) {
+int b=5;
+    foo(b);
+    return;
+}
