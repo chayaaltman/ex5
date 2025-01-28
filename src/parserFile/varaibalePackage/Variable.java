@@ -43,9 +43,9 @@ public class Variable {
     /**
      * Regular expressions for the variable values.
      */
-    //public static final String VARIABLE_BODY_REGEX= VAL_NAME_REGEX +"(?:\\s*=\\s*(\\S.*))?(?:, *" +
-         //   "("+ VAL_NAME_REGEX +")(?: *= *(\\S.*))?)* *; *$";
-    public static final String VARIABLE_BODY_REGEX= "^(\\s*([a-zA-Z_][a-zA-Z0-9_]*\\s*=\\s*\\S.*)(\\s*,\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*=\\s*\\S.*)*\\s*);\\s*$";
+
+    public static final String VARIABLE_BODY_REGEX= "^(\\s*([a-zA-Z_][a-zA-Z0-9_]*\\s*=\\s*\\S.*)(\\s*," +
+            "\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*=\\s*\\S.*)*\\s*);\\s*$";
     /**
      * Regular expressions for the variable values.
      */
@@ -63,8 +63,8 @@ public class Variable {
      * Some finals for the split function
      */
     private final static String SPLIT_REGEX = "\\s*=\\s*";
-    private final static String ASSIGNMENT_REGEX = "=";
-    private final static int ASSIGNMENT_INDEX = 1;
+    private final static String SPLIT_COMMA = "\\s*,\\s*";
+
     private final static int BODY_INDEX = 2;
     /**
      * Some final strings for the types
@@ -163,18 +163,32 @@ public class Variable {
             throw new VariableException(VariableException.ErrorType.VARIABLE_SYNTAX, line);
         }
     }
+    /**
+     * Validates and processes variable assignments within a given line of code.
+     *
+     * @param scope            The current variable scope, represented by a `VarProperties` object,
+     *                         which stores information about variables and their properties.
+     * @param line             The line of code containing the variable assignments, where assignments
+     *                         are expected to be separated by commas (e.g., "a=5, b=6").
+     * @param methodParameters A list of method parameters represented as maps, where each map contains
+     *                         key-value pairs describing parameter attributes (e.g., name, type).
+     * @throws VariableException If the assignment violates variable rules, such as assigning to
+     *                           an undeclared variable or a variable declared as `final`.
+     */
 
-    private void checkAssignment(VarProperties scope, String line, List<Map<String, String>> methodParameters ) throws VariableException {
-        String[] pairs = line.split("\\s*,\\s*");
+    private void checkAssignment(VarProperties scope, String line, List<Map<String, String>> methodParameters
+    ) throws VariableException {
+        String[] pairs = line.split(SPLIT_COMMA);
         for (String pair : pairs) {
-            String[] array = pair.split("\\s*=\\s*");
+            String[] array = pair.split(SPLIT_REGEX);
             String variableName = array[0];
             if (!isVariableExistsNotFinal(scope, variableName)){
                 throw new VariableException(VariableException.ErrorType.VARIABLE_NAME);
             }
             String type = getType(scope, variableName);
             assert type != null;
-            processVariableAssignment(type.toLowerCase(),array,scope,false,methodParameters, variableName);
+            processVariableAssignment(type.toLowerCase(),array,scope,false,methodParameters,
+                    variableName);
 
         }
 
@@ -194,9 +208,9 @@ public class Variable {
     private void checkBody(String type, String body, VarProperties scope, Boolean isFinal, List<Map<String,
             String>> methodParameters) throws Exception {
         // Split the input by commas
-        String[] pairs = body.split("\\s*,\\s*");
+        String[] pairs = body.split(SPLIT_COMMA);
         for (String pair : pairs) {
-            String[] array = pair.split("\\s*=\\s*");
+            String[] array = pair.split(SPLIT_REGEX);
             String variableName = array[0];
             validateVariableName(variableName);
             checkVariableUsage(type, variableName, scope, methodParameters);
@@ -455,7 +469,15 @@ public class Variable {
             }
         return false;
     }
-
+    /**
+     * Retrieves the type of a variable within the specified scope.
+     *
+     * @param scope The scope of the variable, which can be `GLOBAL` or `LOCAL`, represented by
+     *              the `VarProperties` enum.
+     * @param var   The name of the variable whose type is to be determined.
+     * @return The type of the variable as a `String` if the variable exists in the specified scope;
+     *         `null` if the variable does not exist in the provided scope.
+     */
     private String getType(VarProperties scope, String var){
         if (scope== VarProperties.GLOBAL){
             for (Type type : globalValMap.keySet()) {
@@ -473,7 +495,18 @@ public class Variable {
         }
         return null;
     }
-
+/**
+ * Checks if a given variable is **not** declared as `final` in the provided list of type maps.
+ *
+ * @param typeList A list of maps where:
+ *                 - Each map has variable names as keys (e.g., `String`).
+ *                 - The value for each key is another map, where:
+ *                   - The key is a property of the variable (e.g., `IS_FINAL`).
+ *                   - The value is a `Boolean` indicating the property state.
+ * @param var      The name of the variable to check.
+ * @return `true` if the variable exists in the `typeList` and is **not** declared as `final`;
+ *         `false` otherwise.
+ */
     private boolean isVarNotFinal(ArrayList<HashMap<String, HashMap<VarProperties, Boolean>>>
                                        typeList, String var) {
         for (HashMap<String, HashMap<VarProperties, Boolean>> map : typeList){
